@@ -84,35 +84,46 @@ public class EnemyController : MonoBehaviour
 
         if (!alreadyAttacked)
         {
-            // Calculate the direction from the firePoint to the player
-            Vector3 direction = (player.position - firePoint.position).normalized;
+            // Check for a clear line of sight using a raycast
+            RaycastHit hit;
+            Vector3 direction = (player.position - transform.position).normalized;
 
-            // Calculate the rotation needed for the projectile to face the player
-            Quaternion projectileRotation = Quaternion.LookRotation(direction);
-
-            // Instantiate the projectile at the firePoint position with the calculated rotation
-            GameObject projectile = Instantiate(projectilePrefab, firePoint.position, projectileRotation);
-
-            // Get the Rigidbody component of the projectile
-            Rigidbody rb = projectile.GetComponent<Rigidbody>();
-            if (rb != null)
+            // Perform the raycast from the enemy's position to the player's position
+            if (Physics.Raycast(transform.position, direction, out hit))
             {
-                // Apply a forward force to the projectile in the direction it's facing
-                rb.AddForce(direction * projectileSpeed, ForceMode.VelocityChange);
+                // Check if the raycast hit the player
+                if (hit.transform == player)
+                {
+                    // The enemy has a clear line of sight to the player, proceed with the attack
+
+                    // Calculate the rotation needed for the projectile to face the player
+                    Quaternion projectileRotation = Quaternion.LookRotation(direction);
+
+                    // Instantiate the projectile at the firePoint position with the calculated rotation
+                    GameObject projectile = Instantiate(projectilePrefab, firePoint.position, projectileRotation);
+
+                    // Get the Rigidbody component of the projectile
+                    Rigidbody rb = projectile.GetComponent<Rigidbody>();
+                    if (rb != null)
+                    {
+                        // Apply a forward force to the projectile in the direction it's facing
+                        rb.AddForce(direction * projectileSpeed, ForceMode.VelocityChange);
+                    }
+
+                    // Optionally, destroy the projectile after 'projectileLifetime' seconds to clean up
+                    Destroy(projectile, projectileLifetime);
+
+                    // Deal damage to the player directly (without projectiles)
+                    PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
+                    if (playerHealth != null)
+                    {
+                        playerHealth.TakeDamage(attackDamage);
+                    }
+
+                    alreadyAttacked = true;
+                    Invoke(nameof(ResetAttack), timeBetweenAttacks); // Reset the attack flag after a delay
+                }
             }
-
-            // Optionally, destroy the projectile after 'projectileLifetime' seconds to clean up
-            Destroy(projectile, projectileLifetime);
-
-            // Deal damage to the player directly (without projectiles)
-            PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
-            if (playerHealth != null)
-            {
-                playerHealth.TakeDamage(attackDamage);
-            }
-
-            alreadyAttacked = true;
-            Invoke(nameof(ResetAttack), timeBetweenAttacks); // Reset the attack flag after a delay
         }
     }
 

@@ -3,8 +3,10 @@ using UnityEngine;
 
 public class PlayerHealth : MonoBehaviour
 {
-    public float health = 100f;
-    public float maxHealth = 100f; // Maximum health for reference or future use
+    [SerializeField]
+    private float health;
+    [SerializeField]
+    private float maxHealth; // Maximum health for reference or future use
 
     // UI Element for displaying health
     public TextMeshProUGUI healthText; // Assign in the inspector
