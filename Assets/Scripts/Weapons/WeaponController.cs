@@ -91,7 +91,7 @@ public class WeaponController : MonoBehaviour
 
     //Graphics
     [SerializeField]
-    private GameObject muzzleFlash, bulletHoleGraphic;
+    private GameObject muzzleFlash, bulletHoleGraphic, bulletHoleEnemyGraphic;
     [SerializeField]
     private TextMeshProUGUI text;
     private Animator anim;
@@ -180,29 +180,43 @@ public class WeaponController : MonoBehaviour
     {
         readyToShoot = false;
 
-        //Spread
+        // Spread
         float x = Random.Range(-spread, spread);
         float y = Random.Range(-spread, spread);
 
-        //Calculate Direction with Spread
+        // Calculate Direction with Spread
         Vector3 direction = fpsCam.transform.forward + new Vector3(x, y, 0);
 
-        //RayCast
-        if (Physics.Raycast(fpsCam.transform.position, direction, out rayHit, range, whatIsEnemy))
+        // RayCast
+        if (Physics.Raycast(fpsCam.transform.position, direction, out RaycastHit rayHit, range, whatIsEnemy))
         {
             Debug.Log(rayHit.collider.name);
 
-            if (rayHit.collider.CompareTag("Enemy"))
-                rayHit.collider.GetComponent<Damageable>().ApplyDamage(damage);
+            bool isEnemyKilled = false;
+            GameObject bulletHolePrefab = bulletHoleGraphic; // Default to the environment bullet hole
 
+            if (rayHit.collider.CompareTag("Enemy"))
+            {
+                // Apply damage and check if it resulted in enemy's death
+                isEnemyKilled = rayHit.collider.GetComponent<Damageable>().ApplyDamage(damage);
+                bulletHolePrefab = bulletHoleEnemyGraphic; // Use the enemy bullet hole graphic if hit an enemy
+            }
+
+            // Only instantiate the bullet hole prefab if the enemy wasn't killed by this shot
+            if (!isEnemyKilled)
+            {
+                GameObject bulletHole = Instantiate(bulletHolePrefab, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
+                // If it's an enemy, we also check to potentially destroy the bullet hole quickly
+                if (rayHit.collider.CompareTag("Enemy"))
+                {
+                    Destroy(bulletHole, 0.75f); // Destroy quickly if it's an enemy
+                }
+            }
         }
 
-
-        //Graphics
-        GameObject bulletHole = Instantiate(bulletHoleGraphic, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
+        // Muzzle flash graphics
         GameObject flashInstance = Instantiate(muzzleFlash, attackPoint.position, Quaternion.identity);
-
-        Destroy(flashInstance, 1f); 
+        Destroy(flashInstance, 1f);
 
         bulletsLeft--;
         bulletsShot--;

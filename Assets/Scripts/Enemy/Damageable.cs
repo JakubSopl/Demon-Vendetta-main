@@ -12,18 +12,21 @@ public class Damageable : MonoBehaviour
         currentHealth = maxHealth;
     }
 
-    public void ApplyDamage(int damage)
+    // Adjusted to return bool
+    public bool ApplyDamage(int damage)
     {
         currentHealth -= damage;
-
         if (currentHealth <= 0)
         {
             Die();
+            return true; // Indicate the enemy has died
         }
+        return false; // Indicate the enemy is still alive
     }
 
     void Die()
     {
-        Destroy(gameObject);
+        Destroy(gameObject); // Destroy the enemy object
     }
 }
+
