@@ -91,7 +91,7 @@ public class WeaponController : MonoBehaviour
 
     //Graphics
     [SerializeField]
-    private GameObject muzzleFlash, bulletHoleGraphic, bulletHoleEnemyGraphic;
+    private GameObject muzzleFlash, bulletHoleGraphic, bulletHoleEnemyGraphic, bulletHoleLastShotEnemyGraphic;
     [SerializeField]
     private TextMeshProUGUI text;
     private Animator anim;
@@ -199,18 +199,18 @@ public class WeaponController : MonoBehaviour
             {
                 // Apply damage and check if it resulted in enemy's death
                 isEnemyKilled = rayHit.collider.GetComponent<Damageable>().ApplyDamage(damage);
-                bulletHolePrefab = bulletHoleEnemyGraphic; // Use the enemy bullet hole graphic if hit an enemy
+
+                // Use the enemy bullet hole graphic if hit an enemy
+                // Check if the enemy is killed to decide which bullet hole prefab to use
+                bulletHolePrefab = isEnemyKilled ? bulletHoleLastShotEnemyGraphic : bulletHoleEnemyGraphic;
             }
 
-            // Only instantiate the bullet hole prefab if the enemy wasn't killed by this shot
-            if (!isEnemyKilled)
+            // Instantiate the bullet hole prefab whether the enemy was killed or not
+            GameObject bulletHole = Instantiate(bulletHolePrefab, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
+            // If it's an enemy, we also check to potentially destroy the bullet hole quickly, except for the last shot graphic
+            if (rayHit.collider.CompareTag("Enemy") && !isEnemyKilled)
             {
-                GameObject bulletHole = Instantiate(bulletHolePrefab, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
-                // If it's an enemy, we also check to potentially destroy the bullet hole quickly
-                if (rayHit.collider.CompareTag("Enemy"))
-                {
-                    Destroy(bulletHole, 0.75f); // Destroy quickly if it's an enemy
-                }
+                Destroy(bulletHole, 0.75f); // Destroy quickly if it's an enemy and not the last shot
             }
         }
 
@@ -226,6 +226,7 @@ public class WeaponController : MonoBehaviour
         if (bulletsShot > 0 && bulletsLeft > 0)
             Invoke(nameof(Shoot), timeBetweenShots);
     }
+
     private void ResetShot()
     {
         readyToShoot = true;
