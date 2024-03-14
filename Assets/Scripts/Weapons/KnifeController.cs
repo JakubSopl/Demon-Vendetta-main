@@ -78,7 +78,7 @@ public class KnifeController : MonoBehaviour
 
     //Graphics
     [SerializeField]
-    private GameObject muzzleFlash, bulletHoleGraphic;
+    private GameObject muzzleFlash, bulletHoleGraphic, bulletHoleEnemyGraphic, bulletHoleLastShotEnemyGraphic;
     private Animator anim;
 
     [SerializeField]
@@ -146,29 +146,46 @@ public class KnifeController : MonoBehaviour
     {
         readyToShoot = false;
 
-        //Spread
+        // Spread
         float x = Random.Range(-spread, spread);
         float y = Random.Range(-spread, spread);
 
-        //Calculate Direction with Spread
+        // Calculate Direction with Spread
         Vector3 direction = fpsCam.transform.forward + new Vector3(x, y, 0);
 
-        //RayCast
+        // RayCast
+        RaycastHit rayHit;
         if (Physics.Raycast(fpsCam.transform.position, direction, out rayHit, range, whatIsEnemy))
         {
             Debug.Log(rayHit.collider.name);
 
+            GameObject bulletHoleInstance = null; // Initialize as null to allow conditional instantiation
             if (rayHit.collider.CompareTag("Enemy"))
-                rayHit.collider.GetComponent<Damageable>().ApplyDamage(damage);
+            {
+                bool isDead = rayHit.collider.GetComponent<Damageable>().ApplyDamage(damage);
+                if (isDead)
+                {
+                    // Instantiate and keep the last shot bullet hole graphic without destroying it
+                    bulletHoleInstance = Instantiate(bulletHoleLastShotEnemyGraphic, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
+                }
+                else
+                {
+                    // Instantiate and destroy the enemy bullet hole graphic after a delay
+                    bulletHoleInstance = Instantiate(bulletHoleEnemyGraphic, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
+                    Destroy(bulletHoleInstance, 0.75f); // Destroy only the enemy bullet hole graphic after 0.75 seconds
+                }
+            }
+            else
+            {
+                // Use the standard bullet hole graphic for non-enemy hits and destroy it after a delay
+                bulletHoleInstance = Instantiate(bulletHoleGraphic, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
+                Destroy(bulletHoleInstance, 0.75f);
+            }
 
+            //Graphics for muzzle flash
+            GameObject flashInstance = Instantiate(muzzleFlash, attackPoint.position, Quaternion.identity);
+            Destroy(flashInstance, 1f);
         }
-
-
-        //Graphics
-        GameObject bulletHole = Instantiate(bulletHoleGraphic, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
-        GameObject flashInstance = Instantiate(muzzleFlash, attackPoint.position, Quaternion.identity);
-
-        Destroy(flashInstance, 1f);
 
         // Reset the readyToShoot flag after the specified time interval
         Invoke(nameof(ResetShot), timeBetweenShooting);
