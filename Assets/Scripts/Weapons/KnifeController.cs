@@ -133,6 +133,11 @@ public class KnifeController : MonoBehaviour
             Shoot();
         }
 
+        if (characterController.isSprinting)
+        {
+            shooting = false;
+        }
+
         if (shooting)
         {
             anim.SetBool("attack", true);

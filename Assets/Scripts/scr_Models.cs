@@ -54,6 +54,8 @@ public static class Scr_Models
         public float isGroundedRadius;
         public float isFallingSpeed;
 
+        public float FallGravityMultiplier { get; internal set; }
+        public float MaxFallGravityMultiplier { get; internal set; }
     }
 
     [Serializable]

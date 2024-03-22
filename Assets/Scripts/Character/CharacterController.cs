@@ -64,6 +64,7 @@ public class CharacterController : MonoBehaviour
     [Header("Weapon")]
     public WeaponController currentWeapon;
     public KnifeController currentWeaponKnife;
+    public bool isKnifeSelected;
     public float weaponAnimationSpeed;
 
     [Header("Weapon Slots")]
@@ -87,12 +88,14 @@ public class CharacterController : MonoBehaviour
 
     private bool isLeaningLeft;
     private bool isLeaningRight;
+    private bool canLean = true;
 
     [Header("Aiming In")]
     public bool isAimingIn;
 
 
     public Image crosshairImage;
+
 
 
     #region - Awake -
@@ -165,6 +168,7 @@ public class CharacterController : MonoBehaviour
         CalculateAimingIn();
         CrosshairControl();
 
+
     }
 
     #endregion
@@ -227,6 +231,7 @@ public class CharacterController : MonoBehaviour
 
     void Equip1()
     {
+        canLean = true;
         Slot1.SetActive(true);
         Slot2.SetActive(false);
         Slot3.SetActive(false);
@@ -240,6 +245,7 @@ public class CharacterController : MonoBehaviour
 
     void Equip2()
     {
+        canLean = true;
         Slot1.SetActive(false);
         Slot2.SetActive(true);
         Slot3.SetActive(false);
@@ -253,6 +259,7 @@ public class CharacterController : MonoBehaviour
 
     void Equip3()
     {
+        canLean = true;
         Slot1.SetActive(false);
         Slot2.SetActive(false);
         Slot3.SetActive(true);
@@ -267,6 +274,7 @@ public class CharacterController : MonoBehaviour
     
     void Equip4()
     {
+        canLean = false;
         Slot1.SetActive(false);
         Slot2.SetActive(false);
         Slot3.SetActive(false);
@@ -358,6 +366,12 @@ public class CharacterController : MonoBehaviour
             isSprinting = false;
         }
 
+        if (characterController.velocity.magnitude > 3 && !isAimingIn)
+        {
+            isLeaningLeft = false;
+            isLeaningRight = false;
+        }
+
         var verticalSpeed = playerSettings.WalkingFowardSpeed;
         var horizontalSpeed = playerSettings.WalkingStrafeSpeed;
 
@@ -391,7 +405,7 @@ public class CharacterController : MonoBehaviour
 
         weaponAnimationSpeed = characterController.velocity.magnitude / (playerSettings.WalkingFowardSpeed * playerSettings.SpeedEffector);
 
-        if(weaponAnimationSpeed > 1)
+        if (weaponAnimationSpeed > 1)
         {
             weaponAnimationSpeed = 1;
         }
@@ -400,24 +414,32 @@ public class CharacterController : MonoBehaviour
         horizontalSpeed *= playerSettings.SpeedEffector;
 
 
-
         newMovementSpeed = Vector3.SmoothDamp(newMovementSpeed, new Vector3(horizontalSpeed * input_Movement.x * Time.deltaTime, 0, verticalSpeed * input_Movement.y * Time.deltaTime), ref newMovementSpeedVelocity, isGrounded ? playerSettings.MovementSmoothing : playerSettings.FallingSmoothing);
         var movementSpeed = transform.TransformDirection(newMovementSpeed);
 
-        if (playerGravity > gravityMin)
+        if (!isGrounded)
         {
-            playerGravity -= gravityAmount * Time.deltaTime;
+            if (playerGravity > gravityMin)
+            {
+                // Reduce gravityAmount if falling acceleration feels too fast.
+                playerGravity -= gravityAmount * Time.deltaTime;
+            }
+        }
+        else
+        {
+            if (playerGravity < -0.1f)
+            {
+                playerGravity = -0.1f; // Reset gravity when grounded to avoid continuous acceleration.
+            }
         }
 
-        if (playerGravity < -0.1f && isGrounded)
-        {
-            playerGravity = -0.1f;
-        }
+        movementSpeed.y += playerGravity; // Apply gravity effect to vertical movement.
 
-        movementSpeed.y += playerGravity;
         movementSpeed += jumpingForce * Time.deltaTime;
 
         characterController.Move(movementSpeed);
+
+
 
     }
 
@@ -425,31 +447,32 @@ public class CharacterController : MonoBehaviour
 
     #region - Leaning -
 
-    
+
 
     private void CalculateLeaning()
     {
-        if (isLeaningLeft)
-        {
-            targetLean = leanAngle;
-        }
-        else if (isLeaningRight)
-        {
-            targetLean = -leanAngle;
-        }
-        else
-        {
-            targetLean = 0;
-        }
 
-        if (playerStance == PlayerStance.Crouch || playerStance == PlayerStance.Prone)
-        {
-            targetLean = 0;
-        }
+            if (isLeaningLeft && canLean)
+            {
+                targetLean = leanAngle;
+            }
+            else if (isLeaningRight && canLean)
+            {
+                targetLean = -leanAngle;
+            }
+            else
+            {
+                targetLean = 0;
+            }
 
-        currentLean = Mathf.SmoothDamp(currentLean, targetLean, ref leanVelocity, leanSmoothing);
+            if (playerStance == PlayerStance.Crouch || playerStance == PlayerStance.Prone)
+            {
+                targetLean = 0;
+            }
 
-        LeanPivot.localRotation =  Quaternion.Euler(new Vector3(0, 0, currentLean)); 
+            currentLean = Mathf.SmoothDamp(currentLean, targetLean, ref leanVelocity, leanSmoothing);
+
+            LeanPivot.localRotation =  Quaternion.Euler(new Vector3(0, 0, currentLean));
     }
 
     #endregion
@@ -485,6 +508,7 @@ public class CharacterController : MonoBehaviour
         playerGravity = 0;
         currentWeapon.TriggerJump();
     }
+
 
     #endregion
 
