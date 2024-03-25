@@ -339,6 +339,12 @@ public class CharacterController : MonoBehaviour
         }
     }
 
+    public bool IsGrounded()
+    {
+        return isGrounded;
+    }
+
+
     private void SetIsFalling()
     {
         isFalling = (!isGrounded && characterController.velocity.magnitude >= playerSettings.isFallingSpeed);
