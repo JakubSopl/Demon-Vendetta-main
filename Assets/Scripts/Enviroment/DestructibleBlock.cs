@@ -3,24 +3,47 @@ using UnityEngine;
 
 public class DestructibleBlock : MonoBehaviour
 {
-    public float destructionDelay = 2.0f; // Time in seconds before the block is destroyed
+    public Transform playerTransform; // Assign your player's Transform in the inspector
+    public Material newMaterial; // Assign the new material in the inspector
+    public float disappearDelay = 2f; // Time before the block disappears after the player steps on it
+    private bool isDisappearing = false; // Flag to ensure we only start the coroutine once
 
-    private void OnTriggerEnter(Collider other)
+    private Renderer blockRenderer; // To hold the renderer component of the block
+
+    private void Start()
     {
-        // Checks if the collider entering the trigger zone is the player
-        if (other.GetComponent<CharacterController>() != null)
+        blockRenderer = GetComponent<Renderer>();
+    }
+
+    private void Update()
+    {
+        if (!isDisappearing)
         {
-            Debug.Log("Player has entered the trigger zone. Starting countdown to destruction.", this);
-            StartCoroutine(DestroyAfterDelay());
+            RaycastHit hit;
+            // Cast a ray downward from the player's position to detect the block
+            if (Physics.Raycast(playerTransform.position, Vector3.down, out hit))
+            {
+                // Check if the ray hits this block and is within a certain distance (e.g., just above the block)
+                if (hit.collider.gameObject == gameObject && hit.distance < 1f) // Adjust distance as needed
+                {
+                    TriggerEffect();
+                }
+            }
         }
     }
 
-    private IEnumerator DestroyAfterDelay()
+    private void TriggerEffect()
     {
-        // Waits for the specified delay
-        yield return new WaitForSeconds(destructionDelay);
-        Debug.Log("Destruction countdown completed. Destroying the block.", this);
+        // Change the material of the block as soon as the player is detected right above it
+        blockRenderer.material = newMaterial;
+        isDisappearing = true;
+        // Start the coroutine to disappear the block after a delay
+        StartCoroutine(DisappearAfterDelay());
+    }
 
-        Destroy(gameObject); // Destroys this block GameObject
+    private IEnumerator DisappearAfterDelay()
+    {
+        yield return new WaitForSeconds(disappearDelay);
+        gameObject.SetActive(false); // Hides the block, or you could use Destroy(gameObject) to completely remove it
     }
 }

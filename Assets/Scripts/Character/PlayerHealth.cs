@@ -1,5 +1,5 @@
-using TMPro;
 using UnityEngine;
+using TMPro; // Make sure to include this namespace for TextMeshPro elements
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -11,9 +11,28 @@ public class PlayerHealth : MonoBehaviour
     // UI Element for displaying health
     public TextMeshProUGUI healthText; // Assign in the inspector
 
+    // LayerMask to specify which layer is considered deadly
+    public LayerMask deadlyLayerMask;
+
     private void Start()
     {
         UpdateHealthUI(); // Initial UI update
+    }
+
+    private void Update()
+    {
+        CheckForDeadlySurface();
+    }
+
+    private void CheckForDeadlySurface()
+    {
+        RaycastHit hit;
+        // Cast a ray straight down from the player's position
+        if (Physics.Raycast(transform.position, Vector3.down, out hit, 1.5f, deadlyLayerMask)) // Adjust the distance as needed
+        {
+            // If the ray hits a surface on the deadly layer, trigger death
+            Die();
+        }
     }
 
     public void TakeDamage(float damageAmount)

@@ -339,11 +339,6 @@ public class CharacterController : MonoBehaviour
         }
     }
 
-    public bool IsGrounded()
-    {
-        return isGrounded;
-    }
-
 
     private void SetIsFalling()
     {
