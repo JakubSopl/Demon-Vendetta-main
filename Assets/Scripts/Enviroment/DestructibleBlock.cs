@@ -1,30 +1,33 @@
-using System.Collections;
 using UnityEngine;
+using System.Collections;
 
 public class DestructibleBlock : MonoBehaviour
 {
-    public Transform playerTransform; // Assign your player's Transform in the inspector
-    public Material newMaterial; // Assign the new material in the inspector
-    public float disappearDelay = 2f; // Time before the block disappears after the player steps on it
-    private bool isDisappearing = false; // Flag to ensure we only start the coroutine once
+    public Transform playerTransform;
+    public Material newMaterial;
+    public float disappearDelay = 2f;
+    public float respawnDelay = 3f;
+    private bool isDisappearing = false;
 
-    private Renderer blockRenderer; // To hold the renderer component of the block
+    private Renderer blockRenderer;
+    private Collider blockCollider; // Reference to the block's collider
+    private Material originalMaterial;
 
     private void Start()
     {
         blockRenderer = GetComponent<Renderer>();
+        blockCollider = GetComponent<Collider>(); // Get the collider component
+        originalMaterial = blockRenderer.material;
     }
 
     private void Update()
     {
-        if (!isDisappearing)
+        if (!isDisappearing && blockCollider.enabled) // Check if the block's collider is enabled
         {
             RaycastHit hit;
-            // Cast a ray downward from the player's position to detect the block
             if (Physics.Raycast(playerTransform.position, Vector3.down, out hit))
             {
-                // Check if the ray hits this block and is within a certain distance (e.g., just above the block)
-                if (hit.collider.gameObject == gameObject && hit.distance < 1f) // Adjust distance as needed
+                if (hit.collider.gameObject == gameObject && hit.distance < 1f)
                 {
                     TriggerEffect();
                 }
@@ -34,16 +37,20 @@ public class DestructibleBlock : MonoBehaviour
 
     private void TriggerEffect()
     {
-        // Change the material of the block as soon as the player is detected right above it
         blockRenderer.material = newMaterial;
         isDisappearing = true;
-        // Start the coroutine to disappear the block after a delay
-        StartCoroutine(DisappearAfterDelay());
+        StartCoroutine(DisappearAndRespawnAfterDelay());
     }
 
-    private IEnumerator DisappearAfterDelay()
+    private IEnumerator DisappearAndRespawnAfterDelay()
     {
         yield return new WaitForSeconds(disappearDelay);
-        gameObject.SetActive(false); // Hides the block, or you could use Destroy(gameObject) to completely remove it
+        blockRenderer.enabled = false; // Disable the renderer instead of the entire GameObject
+        blockCollider.enabled = false; // Disable the collider
+        yield return new WaitForSeconds(respawnDelay);
+        blockRenderer.enabled = true; // Enable the renderer
+        blockCollider.enabled = true; // Enable the collider
+        blockRenderer.material = originalMaterial;
+        isDisappearing = false;
     }
 }

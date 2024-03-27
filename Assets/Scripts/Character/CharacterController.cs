@@ -517,6 +517,8 @@ public class CharacterController : MonoBehaviour
 
     private void CalculateStance()
     {
+        if (isSprinting) return;
+
         var currentStance = playerStandStance;
 
         if(playerStance == PlayerStance.Crouch)
