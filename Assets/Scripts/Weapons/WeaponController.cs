@@ -221,6 +221,8 @@ public class WeaponController : MonoBehaviour
         bulletsLeft--;
         bulletsShot--;
 
+
+
         Invoke(nameof(ResetShot), timeBetweenShooting);
 
         if (bulletsShot > 0 && bulletsLeft > 0)
