@@ -207,27 +207,27 @@ public class WeaponController : MonoBehaviour
 
             // Instantiate the bullet hole prefab whether the enemy was killed or not
             GameObject bulletHole = Instantiate(bulletHolePrefab, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
-            // If it's an enemy, we also check to potentially destroy the bullet hole quickly, except for the last shot graphic
-            if (rayHit.collider.CompareTag("Enemy") && !isEnemyKilled)
-            {
-                Destroy(bulletHole, 0.75f); // Destroy quickly if it's an enemy and not the last shot
-            }
+
+            // Decide the bullet hole's lifetime based on whether it's a killing shot
+            float bulletHoleLifetime = isEnemyKilled ? 5.0f : 0.75f; // Adjust these times as needed
+
+            // Schedule the bullet hole's destruction
+            Destroy(bulletHole, bulletHoleLifetime);
         }
 
         // Muzzle flash graphics
         GameObject flashInstance = Instantiate(muzzleFlash, attackPoint.position, Quaternion.identity);
-        Destroy(flashInstance, 1f);
+        Destroy(flashInstance, 1f); // Destroy the muzzle flash after 1 second
 
         bulletsLeft--;
         bulletsShot--;
 
-
-
-        Invoke(nameof(ResetShot), timeBetweenShooting);
+        Invoke(nameof(ResetShot), timeBetweenShooting); // Reset the shooting mechanism after the specified time
 
         if (bulletsShot > 0 && bulletsLeft > 0)
-            Invoke(nameof(Shoot), timeBetweenShots);
+            Invoke(nameof(Shoot), timeBetweenShots); // Continue shooting if there are bullets left and more shots to fire
     }
+
 
     private void ResetShot()
     {
