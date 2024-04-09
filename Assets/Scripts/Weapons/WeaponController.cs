@@ -91,7 +91,7 @@ public class WeaponController : MonoBehaviour
 
     //Graphics
     [SerializeField]
-    private GameObject muzzleFlash, bulletHoleGraphic, bulletHoleEnemyGraphic, bulletHoleLastShotEnemyGraphic;
+    private GameObject muzzleFlash, bulletHoleGraphic, bulletHoleEnemyGraphic, bulletHoleLastShotEnemyGraphic, bulletHoleEnemyGraphicBlowUp, bulletHoleLastShotEnemyGraphicBlowUp;
     [SerializeField]
     private TextMeshProUGUI text;
     private Animator anim;
@@ -201,15 +201,31 @@ public class WeaponController : MonoBehaviour
                 isEnemyKilled = rayHit.collider.GetComponent<Damageable>().ApplyDamage(damage);
 
                 // Use the enemy bullet hole graphic if hit an enemy
-                // Check if the enemy is killed to decide which bullet hole prefab to use
                 bulletHolePrefab = isEnemyKilled ? bulletHoleLastShotEnemyGraphic : bulletHoleEnemyGraphic;
+            }
+
+            if (rayHit.collider.CompareTag("EnemyBlowUp"))
+            {
+                // Apply damage and check if it resulted in enemy's death
+                isEnemyKilled = rayHit.collider.GetComponent<Damageable>().ApplyDamage(damage);
+
+                // Use the enemy bullet hole graphic if hit an enemy
+                bulletHolePrefab = isEnemyKilled ? bulletHoleLastShotEnemyGraphicBlowUp : bulletHoleEnemyGraphicBlowUp;
             }
 
             // Instantiate the bullet hole prefab whether the enemy was killed or not
             GameObject bulletHole = Instantiate(bulletHolePrefab, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
 
             // Decide the bullet hole's lifetime based on whether it's a killing shot
-            float bulletHoleLifetime = isEnemyKilled ? 5.0f : 0.75f; // Adjust these times as needed
+            float bulletHoleLifetime;
+            if (bulletHolePrefab == bulletHoleLastShotEnemyGraphicBlowUp)
+            {
+                bulletHoleLifetime = 0.5f;  // Short lifetime for the special last shot bullet hole
+            }
+            else
+            {
+                bulletHoleLifetime = isEnemyKilled ? 5.0f : 0.75f;  // Adjust these times as needed for other cases
+            }
 
             // Schedule the bullet hole's destruction
             Destroy(bulletHole, bulletHoleLifetime);
