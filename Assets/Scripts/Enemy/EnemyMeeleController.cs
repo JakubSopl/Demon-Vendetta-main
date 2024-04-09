@@ -77,7 +77,13 @@ public class EnemyMeeleController : MonoBehaviour
     {
         agent.SetDestination(transform.position); // Stop the enemy's movement
 
-        transform.LookAt(player); // Ensure the enemy faces the player
+        // Ensure the enemy faces the player only if they are on the same horizontal plane
+        float yDifference = Mathf.Abs(transform.position.y - player.position.y);
+
+        if (yDifference < 1.0f) // You can adjust this threshold according to your needs
+        {
+            transform.LookAt(new Vector3(player.position.x, transform.position.y, player.position.z));
+        }
 
         if (!alreadyAttacked)
         {
