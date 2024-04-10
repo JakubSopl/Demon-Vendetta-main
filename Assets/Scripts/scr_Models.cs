@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+
 public static class Scr_Models
 {
     #region - Player -
@@ -11,6 +12,13 @@ public static class Scr_Models
         Stand,
         Crouch,
         Prone
+    }
+
+    public enum WeaponType
+    {
+        Rifle,
+        Shotgun,
+        Pistol
     }
 
     [Serializable]

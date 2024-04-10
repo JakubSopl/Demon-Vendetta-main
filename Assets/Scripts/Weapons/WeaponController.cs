@@ -75,6 +75,7 @@ public class WeaponController : MonoBehaviour
     [SerializeField]
     private bool allowButtonHold;
     int bulletsLeft, bulletsShot;
+    private int bulletsTotal = 30; // Total ammo available
 
     //bools 
     bool shooting, readyToShoot, reloading;
@@ -107,7 +108,7 @@ public class WeaponController : MonoBehaviour
     public bool isSprinting;
 
 
-
+    public static List<WeaponController> AllWeapons = new List<WeaponController>();
 
 
     #region - Start / Update / Awake -
@@ -122,6 +123,19 @@ public class WeaponController : MonoBehaviour
     }
 
 
+    private void Awake()
+    {
+        bulletsLeft = magazineSize;
+        bulletsTotal = Mathf.Max(bulletsTotal, magazineSize); // Initialize total bullets, ensuring it's at least one full magazine
+        readyToShoot = true;
+        AllWeapons.Add(this);
+    }
+
+    private void OnDestroy()
+    {
+        AllWeapons.Remove(this);
+    }
+
     private void Update()
     {
         if (!isInitialised)
@@ -133,40 +147,37 @@ public class WeaponController : MonoBehaviour
         SetWeaponAnimations();
         CalculateWeaponSway();
         CalculateAimingIn();
-        //CalculateShooting();
 
         MyInput();
 
-        //SetText
-        text.SetText(bulletsLeft + " / " + magazineSize);
+        // Update UI Text to show current bullets and total reserve
+        text.SetText($"{bulletsLeft} / {magazineSize} | Reserve: {bulletsTotal}");
     }
 
-    private void Awake()
-    {
-        bulletsLeft = magazineSize;
-        readyToShoot = true;
-    }
 
     #endregion
 
     #region - Shooting -
 
-    
+
 
     private void MyInput()
     {
+        CheckForAmmoBox();  // Continue checking for ammo box pickups
+
         if (allowButtonHold) shooting = Input.GetKey(KeyCode.Mouse0);
         else shooting = Input.GetKeyDown(KeyCode.Mouse0);
 
-        if (Input.GetKeyDown(KeyCode.R) && bulletsLeft < magazineSize && !reloading) Reload();
-      
-        //Shoot
+        if (Input.GetKeyDown(KeyCode.R) && bulletsLeft < magazineSize && !reloading && bulletsTotal > 0)
+            Reload();
+
         if (readyToShoot && shooting && !reloading && bulletsLeft > 0 && characterController.isSprinting == false)
         {
             bulletsShot = bulletsPerTap;
             Shoot();
         }
 
+        // Ensure reload animation is properly managed
         if (reloading && !isAimingIn && !isShooting && isGroundedTrigger == true)
         {
             anim.SetBool("reload", true);
@@ -176,6 +187,7 @@ public class WeaponController : MonoBehaviour
             anim.SetBool("reload", false);
         }
     }
+
     private void Shoot()
     {
         readyToShoot = false;
@@ -251,22 +263,47 @@ public class WeaponController : MonoBehaviour
     }
     private void Reload()
     {
-        if (isAimingIn || isShooting)
-        {
-            reloading = false;
-        }
-        else
+        int bulletsToLoad = Mathf.Min(bulletsTotal, magazineSize - bulletsLeft);
+        if (bulletsToLoad > 0 && !isAimingIn && !isShooting)
         {
             reloading = true;
             Invoke(nameof(ReloadFinished), reloadTime);
         }
     }
+
     private void ReloadFinished()
     {
-        bulletsLeft = magazineSize;
+        int bulletsToLoad = Mathf.Min(bulletsTotal, magazineSize - bulletsLeft);
+        bulletsLeft += bulletsToLoad;
+        bulletsTotal -= bulletsToLoad;
         reloading = false;
     }
 
+    public void AddAmmo()
+    {
+        int addAmount = 30; // Define how much ammo is added per pickup
+        bulletsTotal += addAmount;
+    }
+
+    private void CheckForAmmoBox()
+    {
+        Vector3 rayOrigin = fpsCam.transform.position;
+        Vector3 rayDirection = fpsCam.transform.forward;
+
+        if (Physics.Raycast(rayOrigin, rayDirection, out RaycastHit hitInfo, 3.0f)) // Adjust range as needed
+        {
+            if (hitInfo.collider.CompareTag("AmmoBox"))
+            {
+                foreach (WeaponController weapon in WeaponController.AllWeapons)
+                {
+                    weapon.AddAmmo();
+                }
+                Destroy(hitInfo.collider.gameObject); // Destroy the ammo box
+
+                // Optionally, add some feedback for the player here (sound, UI update, etc.)
+            }
+        }
+    }
     #endregion
 
     #region - Initialise -

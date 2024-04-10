@@ -227,6 +227,7 @@ public class CharacterController : MonoBehaviour
 
     #endregion
 
+
     #region - GunSwitch -
 
     void Equip1()
