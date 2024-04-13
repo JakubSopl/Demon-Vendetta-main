@@ -1,56 +1,71 @@
 using UnityEngine;
-using TMPro; // Make sure to include this namespace for TextMeshPro elements
+using TMPro;
 
 public class PlayerHealth : MonoBehaviour
 {
     [SerializeField]
     private float health;
     [SerializeField]
-    private float maxHealth; // Maximum health for reference or future use
+    private float maxHealth;
 
-    // UI Element for displaying health
-    public TextMeshProUGUI healthText; // Assign in the inspector
-
-    // LayerMask to specify which layer is considered deadly
+    public TextMeshProUGUI healthText;
     public LayerMask deadlyLayerMask;
 
     private void Start()
     {
-        UpdateHealthUI(); // Initial UI update
+        UpdateHealthUI();
     }
 
     private void Update()
     {
         CheckForDeadlySurface();
+        CheckForMedKit();
     }
 
     private void CheckForDeadlySurface()
     {
         RaycastHit hit;
-        // Cast a ray straight down from the player's position
-        if (Physics.Raycast(transform.position, Vector3.down, out hit, 1.5f, deadlyLayerMask)) // Adjust the distance as needed
+        if (Physics.Raycast(transform.position, Vector3.down, out hit, 1.5f, deadlyLayerMask))
         {
-            // If the ray hits a surface on the deadly layer, trigger death
             Die();
+        }
+    }
+
+    private void CheckForMedKit()
+    {
+        RaycastHit hitInfo;
+        if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hitInfo, 3.0f)) // Use main camera's forward direction for raycasting
+        {
+            if (hitInfo.collider.CompareTag("MedKit"))
+            {
+                RestoreHealth(20); // Restore 20 health, or any other value
+                Destroy(hitInfo.collider.gameObject); // Remove the medkit from the scene
+
+                // Optional: Add feedback for the player (e.g., sound effect, UI update)
+            }
         }
     }
 
     public void TakeDamage(float damageAmount)
     {
         health -= damageAmount;
-        health = Mathf.Clamp(health, 0, maxHealth); // Ensures health stays within bounds
-
-        UpdateHealthUI(); // Update UI whenever health changes
-
+        health = Mathf.Clamp(health, 0, maxHealth);
+        UpdateHealthUI();
         if (health <= 0f)
         {
             Die();
         }
     }
 
+    private void RestoreHealth(float amount)
+    {
+        health += amount;
+        health = Mathf.Clamp(health, 0, maxHealth);
+        UpdateHealthUI();
+    }
+
     private void UpdateHealthUI()
     {
-        // Update the health text to display the current health
         if (healthText != null)
         {
             healthText.text = "Health: " + health.ToString();
@@ -59,9 +74,7 @@ public class PlayerHealth : MonoBehaviour
 
     private void Die()
     {
-        // Handle player death here (e.g., show game over screen, respawn, etc.)
         Debug.Log("Player Died!");
-        // Optionally disable the player gameObject or components to simulate death
         gameObject.SetActive(false);
     }
 }
