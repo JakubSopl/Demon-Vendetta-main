@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 
+
+public enum WeaponType { Rifle, Shotgun, Pistol }
+
 public class WeaponController : MonoBehaviour
 {
     private CharacterController characterController;
@@ -109,7 +112,7 @@ public class WeaponController : MonoBehaviour
 
 
     public static List<WeaponController> AllWeapons = new List<WeaponController>();
-
+    public WeaponType weaponType;
 
     #region - Start / Update / Awake -
 
@@ -128,12 +131,25 @@ public class WeaponController : MonoBehaviour
         bulletsLeft = magazineSize;
         bulletsTotal = Mathf.Max(bulletsTotal, magazineSize); // Initialize total bullets, ensuring it's at least one full magazine
         readyToShoot = true;
-        AllWeapons.Add(this);
+        RegisterWeapon();
+    }
+
+    private void RegisterWeapon()
+    {
+        if (!AllWeapons.Contains(this))
+        {
+            AllWeapons.Add(this);
+        }
+    }
+
+    private void UnregisterWeapon()
+    {
+        AllWeapons.Remove(this);
     }
 
     private void OnDestroy()
     {
-        AllWeapons.Remove(this);
+        UnregisterWeapon();
     }
 
     private void Update()
@@ -281,26 +297,50 @@ public class WeaponController : MonoBehaviour
 
     public void AddAmmo()
     {
-        int addAmount = 30; // Define how much ammo is added per pickup
+        int addAmount = 0;
+        string weaponName = gameObject.name;  // Get the name of the GameObject for debugging
+
+        // Determine the amount of ammo to add based on the weapon type
+        switch (weaponType)
+        {
+            case WeaponType.Rifle:
+                addAmount = 20;
+                Debug.Log($"Adding 20 ammo to Rifle {weaponName}");
+                break;
+            case WeaponType.Shotgun:
+                addAmount = 10;
+                Debug.Log($"Adding 10 ammo to Shotgun {weaponName}");
+                break;
+            case WeaponType.Pistol:
+                addAmount = 15;
+                Debug.Log($"Adding 15 ammo to Pistol {weaponName}");
+                break;
+        }
+
+        // Add the determined amount of ammo to the total
         bulletsTotal += addAmount;
+        Debug.Log($"Added {addAmount} ammo to {weaponType} ({weaponName}), new total: {bulletsTotal}");
     }
+
 
     private void CheckForAmmoBox()
     {
-        Vector3 rayOrigin = fpsCam.transform.position;
-        Vector3 rayDirection = fpsCam.transform.forward;
-
-        if (Physics.Raycast(rayOrigin, rayDirection, out RaycastHit hitInfo, 3.0f)) // Adjust range as needed
+        if (Input.GetKeyDown(KeyCode.Tab))
         {
-            if (hitInfo.collider.CompareTag("AmmoBox"))
-            {
-                foreach (WeaponController weapon in WeaponController.AllWeapons)
-                {
-                    weapon.AddAmmo();
-                }
-                Destroy(hitInfo.collider.gameObject); // Destroy the ammo box
+            Vector3 rayOrigin = Camera.main.transform.position;
+            Vector3 rayDirection = Camera.main.transform.forward;
 
-                // Optionally, add some feedback for the player here (sound, UI update, etc.)
+
+            if (Physics.Raycast(rayOrigin, rayDirection, out RaycastHit hitInfo, 3.0f))
+            {
+                if (hitInfo.collider.CompareTag("AmmoBox"))
+                {
+                    foreach (WeaponController weapon in AllWeapons)
+                    {
+                        weapon.AddAmmo();
+                    }
+                    Destroy(hitInfo.collider.gameObject);
+                }
             }
         }
     }
