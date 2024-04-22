@@ -295,33 +295,10 @@ public class WeaponController : MonoBehaviour
         reloading = false;
     }
 
-    public void AddAmmo()
+    public void AddAmmo(int amount)
     {
-        int addAmount = 0;
-        string weaponName = gameObject.name;  // Get the name of the GameObject for debugging
-
-        // Determine the amount of ammo to add based on the weapon type
-        switch (weaponType)
-        {
-            case WeaponType.Rifle:
-                addAmount = 20;
-                Debug.Log($"Adding 20 ammo to Rifle {weaponName}");
-                break;
-            case WeaponType.Shotgun:
-                addAmount = 10;
-                Debug.Log($"Adding 10 ammo to Shotgun {weaponName}");
-                break;
-            case WeaponType.Pistol:
-                addAmount = 15;
-                Debug.Log($"Adding 15 ammo to Pistol {weaponName}");
-                break;
-        }
-
-        // Add the determined amount of ammo to the total
-        bulletsTotal += addAmount;
-        Debug.Log($"Added {addAmount} ammo to {weaponType} ({weaponName}), new total: {bulletsTotal}");
+        bulletsTotal += amount;
     }
-
 
     private void CheckForAmmoBox()
     {
@@ -330,20 +307,49 @@ public class WeaponController : MonoBehaviour
             Vector3 rayOrigin = Camera.main.transform.position;
             Vector3 rayDirection = Camera.main.transform.forward;
 
-
             if (Physics.Raycast(rayOrigin, rayDirection, out RaycastHit hitInfo, 3.0f))
             {
-                if (hitInfo.collider.CompareTag("AmmoBox"))
+                WeaponController weaponToRefill = null;
+                int ammoToAdd = 0;
+
+                // Determine the type of ammo and the amount to add
+                switch (hitInfo.collider.tag)
                 {
-                    foreach (WeaponController weapon in AllWeapons)
-                    {
-                        weapon.AddAmmo();
-                    }
-                    Destroy(hitInfo.collider.gameObject);
+                    case "RifleAmmo":
+                        weaponToRefill = FindWeaponController(WeaponType.Rifle);
+                        ammoToAdd = 30;
+                        break;
+                    case "ShotgunAmmo":
+                        weaponToRefill = FindWeaponController(WeaponType.Shotgun);
+                        ammoToAdd = 14;
+                        break;
+                    case "PistolAmmo":
+                        weaponToRefill = FindWeaponController(WeaponType.Pistol);
+                        ammoToAdd = 7;
+                        break;
+                }
+
+                // If we found a weapon and have a valid ammo amount, add the ammo
+                if (weaponToRefill != null && ammoToAdd > 0)
+                {
+                    weaponToRefill.AddAmmo(ammoToAdd);
+                    Destroy(hitInfo.collider.gameObject);  // Destroy the ammo box
                 }
             }
         }
     }
+
+    // Utility method to find a weapon controller by type
+    private WeaponController FindWeaponController(WeaponType type)
+    {
+        foreach (WeaponController weapon in FindObjectsOfType<WeaponController>())
+        {
+            if (weapon.weaponType == type)
+                return weapon;
+        }
+        return null;  // No weapon of the given type found
+    }
+
     #endregion
 
     #region - Initialise -

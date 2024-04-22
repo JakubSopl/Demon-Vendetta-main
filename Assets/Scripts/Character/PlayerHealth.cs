@@ -33,8 +33,12 @@ public class PlayerHealth : MonoBehaviour
 
     private void CheckForMedKit()
     {
-        RaycastHit hitInfo;
-        if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hitInfo, 3.0f)) // Use main camera's forward direction for raycasting
+        if (Input.GetKeyDown(KeyCode.Tab))
+        {
+            Vector3 rayOrigin = Camera.main.transform.position;
+        Vector3 rayDirection = Camera.main.transform.forward;
+
+        if (Physics.Raycast(rayOrigin, rayDirection, out RaycastHit hitInfo, 3.0f))
         {
             if (hitInfo.collider.CompareTag("MedKit"))
             {
@@ -44,6 +48,9 @@ public class PlayerHealth : MonoBehaviour
                 // Optional: Add feedback for the player (e.g., sound effect, UI update)
             }
         }
+
+        }
+
     }
 
     public void TakeDamage(float damageAmount)
