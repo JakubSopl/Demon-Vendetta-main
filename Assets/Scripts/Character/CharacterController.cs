@@ -405,6 +405,15 @@ public class CharacterController : MonoBehaviour
             playerSettings.SpeedEffector = 1;
         }
 
+        float effectiveVerticalSpeed = verticalSpeed * playerSettings.SpeedEffector;
+        float effectiveHorizontalSpeed = horizontalSpeed * playerSettings.SpeedEffector;
+
+        Vector3 inputVector = new Vector3(input_Movement.x, 0, input_Movement.y);
+        inputVector = Vector3.ClampMagnitude(inputVector, 1); // Normalize input to prevent faster diagonal movement
+
+        Vector3 targetMovement = new Vector3(effectiveHorizontalSpeed * inputVector.x, 0, effectiveVerticalSpeed * inputVector.z);
+        targetMovement = transform.TransformDirection(targetMovement) * Time.deltaTime; // Apply smoothing
+
         weaponAnimationSpeed = characterController.velocity.magnitude / (playerSettings.WalkingFowardSpeed * playerSettings.SpeedEffector);
 
         if (weaponAnimationSpeed > 1)
@@ -412,38 +421,26 @@ public class CharacterController : MonoBehaviour
             weaponAnimationSpeed = 1;
         }
 
-        verticalSpeed *= playerSettings.SpeedEffector;
-        horizontalSpeed *= playerSettings.SpeedEffector;
-
-
-        newMovementSpeed = Vector3.SmoothDamp(newMovementSpeed, new Vector3(horizontalSpeed * input_Movement.x * Time.deltaTime, 0, verticalSpeed * input_Movement.y * Time.deltaTime), ref newMovementSpeedVelocity, isGrounded ? playerSettings.MovementSmoothing : playerSettings.FallingSmoothing);
-        var movementSpeed = transform.TransformDirection(newMovementSpeed);
-
         if (!isGrounded)
         {
             if (playerGravity > gravityMin)
             {
-                // Reduce gravityAmount if falling acceleration feels too fast.
                 playerGravity -= gravityAmount * Time.deltaTime;
             }
         }
         else
         {
-            if (playerGravity < -0.1f)
-            {
-                playerGravity = -0.1f; // Reset gravity when grounded to avoid continuous acceleration.
-            }
+            playerGravity = Mathf.Max(playerGravity, -0.1f); // Reset gravity when grounded to avoid continuous acceleration.
         }
 
-        movementSpeed.y += playerGravity; // Apply gravity effect to vertical movement.
+        targetMovement.y += playerGravity; // Apply gravity effect to vertical movement.
 
-        movementSpeed += jumpingForce * Time.deltaTime;
+        targetMovement += jumpingForce * Time.deltaTime;
 
-        characterController.Move(movementSpeed);
-
-
-
+        characterController.Move(targetMovement);
     }
+
+
 
     #endregion
 

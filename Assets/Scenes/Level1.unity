@@ -538,10 +538,13 @@ MonoBehaviour:
   bulletHoleGraphic: {fileID: 1000010844420130, guid: 4edabb1c0dde62743b137378c7d22980, type: 3}
   bulletHoleEnemyGraphic: {fileID: 0}
   bulletHoleLastShotEnemyGraphic: {fileID: 0}
+  bulletHoleEnemyGraphicBlowUp: {fileID: 0}
+  bulletHoleLastShotEnemyGraphicBlowUp: {fileID: 0}
   text: {fileID: 1471435725}
   isAimingIn: 0
   isShooting: 0
   isSprinting: 0
+  weaponType: 0
 --- !u!1 &157708076
 GameObject:
   m_ObjectHideFlags: 0
@@ -564,7 +567,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &157708077
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -631,6 +634,7 @@ MonoBehaviour:
   sprintCooldown: 1
   currentWeapon: {fileID: 1392260079}
   currentWeaponKnife: {fileID: 0}
+  isKnifeSelected: 0
   weaponAnimationSpeed: 0
   Slot1: {fileID: 1392260076}
   Slot2: {fileID: 2062698830}
@@ -1958,10 +1962,13 @@ MonoBehaviour:
   bulletHoleGraphic: {fileID: 1000013169864706, guid: e5a3d6da48298a0458c1990f58c27069, type: 3}
   bulletHoleEnemyGraphic: {fileID: 0}
   bulletHoleLastShotEnemyGraphic: {fileID: 0}
+  bulletHoleEnemyGraphicBlowUp: {fileID: 0}
+  bulletHoleLastShotEnemyGraphicBlowUp: {fileID: 0}
   text: {fileID: 1471435725}
   isAimingIn: 0
   isShooting: 0
   isSprinting: 0
+  weaponType: 0
 --- !u!1 &321584532
 GameObject:
   m_ObjectHideFlags: 0
@@ -3825,7 +3832,7 @@ Mesh:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: pb_Mesh29272
+  m_Name: pb_Mesh32358
   serializedVersion: 10
   m_SubMeshes:
   - serializedVersion: 2
@@ -4963,7 +4970,7 @@ Mesh:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: pb_Mesh26880
+  m_Name: pb_Mesh32294
   serializedVersion: 10
   m_SubMeshes:
   - serializedVersion: 2
@@ -5446,10 +5453,13 @@ MonoBehaviour:
   bulletHoleGraphic: {fileID: 1000010355441670, guid: 02a509a7fa70ed740ba4197e20c5d32d, type: 3}
   bulletHoleEnemyGraphic: {fileID: 0}
   bulletHoleLastShotEnemyGraphic: {fileID: 0}
+  bulletHoleEnemyGraphicBlowUp: {fileID: 0}
+  bulletHoleLastShotEnemyGraphicBlowUp: {fileID: 0}
   text: {fileID: 1471435725}
   isAimingIn: 0
   isShooting: 0
   isSprinting: 0
+  weaponType: 0
 --- !u!1 &1414847888
 GameObject:
   m_ObjectHideFlags: 0
@@ -7886,10 +7896,13 @@ MonoBehaviour:
   bulletHoleGraphic: {fileID: 1000010844420130, guid: 4edabb1c0dde62743b137378c7d22980, type: 3}
   bulletHoleEnemyGraphic: {fileID: 0}
   bulletHoleLastShotEnemyGraphic: {fileID: 0}
+  bulletHoleEnemyGraphicBlowUp: {fileID: 0}
+  bulletHoleLastShotEnemyGraphicBlowUp: {fileID: 0}
   text: {fileID: 1471435725}
   isAimingIn: 0
   isShooting: 0
   isSprinting: 0
+  weaponType: 0
 --- !u!43 &2085802631
 Mesh:
   m_ObjectHideFlags: 0
