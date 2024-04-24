@@ -193,6 +193,11 @@ public class CharacterController : MonoBehaviour
         }
     }
 
+    private void CrosshairColorChange(Color newCrosshairColour)
+    {
+        crosshairImage.color = newCrosshairColour;
+    }
+
     #endregion
 
     #region - Shooting -
