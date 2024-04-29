@@ -149,6 +149,11 @@ public class CharacterController : MonoBehaviour
         {
             currentWeaponKnife.Initialise(this);
         }
+
+
+        float adjustedValue = PlayerPrefs.GetFloat("crosshaircolor", 0);
+        Color crosshairColor = Color.HSVToRGB(1f, 1f, 1 - adjustedValue);
+        crosshairImage.color = crosshairColor; // Apply the new color
     }
 
     #endregion
