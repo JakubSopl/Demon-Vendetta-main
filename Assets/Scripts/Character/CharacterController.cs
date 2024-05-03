@@ -495,28 +495,31 @@ public class CharacterController : MonoBehaviour
 
     private void Jump()
     {
-        if (!isGrounded || playerStance == PlayerStance.Prone)
-        {
-            playerStance = PlayerStance.Stand;
-            return;
-        }
+        // Check if grounded
+        if (!isGrounded) return;
 
-        if (playerStance == PlayerStance.Crouch)
+        // Handle the stance before attempting to jump
+        if (playerStance == PlayerStance.Prone || playerStance == PlayerStance.Crouch)
         {
-            if (StanceCheck(playerStandStance.StanceCollider.height))
+            if (CanStand())
             {
-                return;
+                // If player can stand and they are trying to jump, switch to stand but don't jump yet
+                playerStance = PlayerStance.Stand;
             }
-
-            playerStance = PlayerStance.Stand;
-            return;
+            return; // Exit the method without jumping
         }
 
-        //Jump
-        jumpingForce = Vector3.up * playerSettings.JumpingHeight;
-        playerGravity = 0;
-        currentWeapon.TriggerJump();
+        // If the player is standing and there are no obstructions above, they can jump
+        if (playerStance == PlayerStance.Stand)
+        {
+            // Apply jumping physics
+            jumpingForce = Vector3.up * playerSettings.JumpingHeight;
+            playerGravity = 0;
+            currentWeapon.TriggerJump();
+        }
     }
+
+
 
 
     #endregion
@@ -544,28 +547,24 @@ public class CharacterController : MonoBehaviour
 
         characterController.height = Mathf.SmoothDamp(characterController.height, currentStance.StanceCollider.height, ref stanceCapsuleHeightVelocity, playerStanceSmoothing);
         characterController.center = Vector3.SmoothDamp(characterController.center, currentStance.StanceCollider.center, ref stanceCapsuleCenterVelocity, playerStanceSmoothing);
-    }   
+    }
 
     private void Crouch()
-    {   
-        if(playerStance == PlayerStance.Crouch)
+    {
+        if (playerStance == PlayerStance.Crouch)
         {
-            if (StanceCheck(playerStandStance.StanceCollider.height))
+            if (!CanStand())
             {
-                return;
+                return; // Don't stand if there's no space
             }
-
-            playerStance = PlayerStance.Stand;
-            return;
+            playerStance = PlayerStance.Stand; // Stand up if there is space
         }
-
-        if (StanceCheck(playerCrouchStance.StanceCollider.height))
+        else
         {
-            return;
+            playerStance = PlayerStance.Crouch; // Crouch down
         }
-
-        playerStance = PlayerStance.Crouch;
     }
+
 
     private void Prone()
     {
@@ -577,9 +576,19 @@ public class CharacterController : MonoBehaviour
         var start = new Vector3(feetTransform.position.x, feetTransform.position.y + characterController.radius + stanceCheckErrorMargin, feetTransform.position.z);
         var end = new Vector3(feetTransform.position.x, feetTransform.position.y - characterController.radius - stanceCheckErrorMargin + stanceCheckHeight, feetTransform.position.z); ;
 
-
-
         return Physics.CheckCapsule(start, end, characterController.radius, playerMask);
+    }
+
+    private bool CanStand()
+    {
+        // Position to start the raycast (just above the player's current head position)
+        Vector3 rayStart = cameraHolder.position + Vector3.up * 0.1f;
+        // Length of the ray (how tall the player stands)
+        float rayLength = playerStandStance.StanceCollider.height - 0.1f; // slight offset from current position
+
+        // Cast a ray upwards to check for space to stand up
+        bool isBlocked = Physics.Raycast(rayStart, Vector3.up, rayLength, playerMask);
+        return !isBlocked; // Return true if not blocked
     }
 
     #endregion
