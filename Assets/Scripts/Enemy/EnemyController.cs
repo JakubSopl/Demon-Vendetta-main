@@ -7,7 +7,10 @@ public class EnemyController : MonoBehaviour
     [SerializeField] private Transform player;
     [SerializeField] private LayerMask whatIsGround, whatIsPlayer;
 
-    [SerializeField] private float health;
+    // Flamethrower components
+    [SerializeField] private GameObject ignitionFlame;
+    [SerializeField] private GameObject flame;
+    [SerializeField] private GameObject lightEffect;
 
     // Patroling
     [SerializeField] private Vector3 walkPoint;
@@ -16,33 +19,43 @@ public class EnemyController : MonoBehaviour
 
     // Attacking
     [SerializeField] private float timeBetweenAttacks;
-    bool alreadyAttacked;
-    [SerializeField] private GameObject projectilePrefab; // Assign this in the Inspector
-    [SerializeField] private Transform firePoint; // The point from which the projectile will be fired
-    [SerializeField] private float projectileSpeed = 1000f; // Adjust based on your needs
-    [SerializeField] private float projectileLifetime = 5f; // Lifetime of the projectile in seconds
-    [SerializeField] private float attackDamage = 10f; // Damage dealt to the player
+    private float lastAttackTime = -999;
+    [SerializeField] private float attackDamage = 10f; // Damage per second to the player
+    [SerializeField] private float rotationSpeed = 5f; // Speed of rotation towards the player
 
+    // Distance management
+    [SerializeField] private float minimumDistance = 8f; // Minimum distance from the player
 
     // States
     [SerializeField] private float sightRange, attackRange;
-    [SerializeField] private bool playerInSightRange, playerInAttackRange;
+    private bool flamethrowerActive = false;
 
     private void Awake()
     {
         player = GameObject.Find("Player").transform;
         agent = GetComponent<NavMeshAgent>();
+
+        // Initially disable flamethrower effects
+        ignitionFlame.SetActive(false);
+        flame.SetActive(false);
+        lightEffect.SetActive(false);
     }
 
     private void Update()
     {
         // Check for sight and attack range
-        playerInSightRange = Physics.CheckSphere(transform.position, sightRange, whatIsPlayer);
-        playerInAttackRange = Physics.CheckSphere(transform.position, attackRange, whatIsPlayer);
+        bool playerInSightRange = Physics.CheckSphere(transform.position, sightRange, whatIsPlayer);
+        bool playerInAttackRange = Physics.CheckSphere(transform.position, attackRange, whatIsPlayer);
 
         if (!playerInSightRange && !playerInAttackRange) Patroling();
         if (playerInSightRange && !playerInAttackRange) ChasePlayer();
         if (playerInAttackRange && playerInSightRange) AttackPlayer();
+
+        // Rotate towards player if flamethrower is active
+        if (flamethrowerActive)
+        {
+            RotateTowardsPlayer();
+        }
     }
 
     private void Patroling()
@@ -61,7 +74,6 @@ public class EnemyController : MonoBehaviour
 
     private void SearchWalkPoint()
     {
-        // Calculate random point in range
         float randomZ = Random.Range(-walkPointRange, walkPointRange);
         float randomX = Random.Range(-walkPointRange, walkPointRange);
 
@@ -73,65 +85,58 @@ public class EnemyController : MonoBehaviour
 
     private void ChasePlayer()
     {
-        agent.SetDestination(player.position);
+        if (Vector3.Distance(transform.position, player.position) > minimumDistance)
+        {
+            agent.SetDestination(player.position);
+        }
+        else
+        {
+            agent.SetDestination(transform.position); // Stop moving if too close
+        }
     }
 
     private void AttackPlayer()
     {
-        agent.SetDestination(transform.position); // Make sure the enemy doesn't move
-
-        // Calculate direction to player
-        Vector3 direction = (player.position - transform.position).normalized;
-
-        // Horizontal rotation
-        Quaternion horizontalRotation = Quaternion.Euler(0, Quaternion.LookRotation(direction).eulerAngles.y, 0);
-
-        // Vertical angle calculation and clamping
-        float verticalAngle = Mathf.Atan2(direction.y, Vector3.Distance(new Vector3(transform.position.x, 0, transform.position.z), new Vector3(player.position.x, 0, player.position.z))) * Mathf.Rad2Deg;
-        verticalAngle = Mathf.Clamp(verticalAngle, -30f, 30f);
-
-        // Combined rotation with clamped vertical adjustment
-        Quaternion finalRotation = Quaternion.Euler(verticalAngle, horizontalRotation.eulerAngles.y, 0);
-        transform.rotation = Quaternion.Slerp(transform.rotation, finalRotation, Time.deltaTime * 10); // Smooth rotation
-
-        if (!alreadyAttacked)
+        if (!flamethrowerActive)
         {
-            // Check for a clear line of sight using a raycast
-            if (Physics.Raycast(transform.position, direction, out RaycastHit hit))
+            EnableFlamethrowerEffects();
+            flamethrowerActive = true;
+        }
+
+        if (Vector3.Distance(transform.position, player.position) > minimumDistance)
+        {
+            agent.SetDestination(player.position);
+        }
+        else
+        {
+            agent.SetDestination(transform.position); // Maintain minimum distance
+        }
+
+        // Apply damage if within attack range and cooldown has passed
+        if (Time.time >= lastAttackTime + timeBetweenAttacks)
+        {
+            lastAttackTime = Time.time;
+            PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
+            if (playerHealth != null)
             {
-                // Check if the raycast hit the player
-                if (hit.transform == player)
-                {
-                    // The enemy has a clear line of sight to the player, proceed with the attack
-                    Quaternion projectileRotation = Quaternion.LookRotation(direction);
-                    GameObject projectile = Instantiate(projectilePrefab, firePoint.position, projectileRotation);
-                    Rigidbody rb = projectile.GetComponent<Rigidbody>();
-                    if (rb != null)
-                    {
-                        rb.AddForce(direction * projectileSpeed, ForceMode.VelocityChange);
-                    }
-                    Destroy(projectile, projectileLifetime); // Clean up the projectile
-
-                    // Optionally dealing damage directly if the projectile is not responsible for this
-                    PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
-                    if (playerHealth != null)
-                    {
-                        playerHealth.TakeDamage(attackDamage);
-                    }
-
-                    alreadyAttacked = true;
-                    Invoke(nameof(ResetAttack), timeBetweenAttacks); // Reset the attack flag after a delay
-                }
+                playerHealth.TakeDamage(attackDamage);
             }
         }
     }
 
-
-    private void ResetAttack()
+    private void RotateTowardsPlayer()
     {
-        alreadyAttacked = false;
+        Vector3 direction = (player.position - transform.position).normalized;
+        Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, 0, direction.z));
+        transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * rotationSpeed);
     }
 
+    private void EnableFlamethrowerEffects()
+    {
+        ignitionFlame.SetActive(true);
+        flame.SetActive(true);
+        lightEffect.SetActive(true);
+    }
 
     private void OnDrawGizmosSelected()
     {

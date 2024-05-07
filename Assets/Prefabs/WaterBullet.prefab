@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 7905489377109056390}
   - component: {fileID: 1285202888508837615}
   - component: {fileID: -1841344861640273011}
+  - component: {fileID: -5407018242188508501}
   m_Layer: 0
   m_Name: WaterBullet
   m_TagString: Untagged
@@ -311,3 +312,16 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &-5407018242188508501
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6982787795655613258}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5bf9dd367c51d34388e3c3a0544b121, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  explosionPrefab: {fileID: 1000011128802252, guid: 0001623568d9c6c43aca0c28cd610742, type: 3}
