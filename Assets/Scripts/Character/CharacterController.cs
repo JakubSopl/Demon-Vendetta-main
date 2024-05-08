@@ -45,7 +45,6 @@ public class CharacterController : MonoBehaviour
     public CharacterStance playerCrouchStance;
     public CharacterStance playerProneStance;
 
-    private readonly float stanceCheckErrorMargin = 0.05f;
     private float cameraHeight;
     private float cameraHeightVelocity;
 
@@ -559,6 +558,14 @@ public class CharacterController : MonoBehaviour
             }
             playerStance = PlayerStance.Stand; // Stand up if there is space
         }
+        else if (playerStance == PlayerStance.Prone)
+        {
+            if (!CanCrouch())
+            {
+                return; // Don't crouch if there's no space
+            }
+            playerStance = PlayerStance.Crouch; // Crouch down if there is space
+        }
         else
         {
             playerStance = PlayerStance.Crouch; // Crouch down
@@ -566,17 +573,10 @@ public class CharacterController : MonoBehaviour
     }
 
 
+
     private void Prone()
     {
         playerStance = PlayerStance.Prone;
-    }
-
-    private bool StanceCheck(float stanceCheckHeight)
-    {
-        var start = new Vector3(feetTransform.position.x, feetTransform.position.y + characterController.radius + stanceCheckErrorMargin, feetTransform.position.z);
-        var end = new Vector3(feetTransform.position.x, feetTransform.position.y - characterController.radius - stanceCheckErrorMargin + stanceCheckHeight, feetTransform.position.z); ;
-
-        return Physics.CheckCapsule(start, end, characterController.radius, playerMask);
     }
 
     private bool CanStand()
@@ -590,6 +590,19 @@ public class CharacterController : MonoBehaviour
         bool isBlocked = Physics.Raycast(rayStart, Vector3.up, rayLength, playerMask);
         return !isBlocked; // Return true if not blocked
     }
+
+    private bool CanCrouch()
+    {
+        // Position to start the raycast (just above the player's current head position)
+        Vector3 rayStart = cameraHolder.position + Vector3.up * 0.1f;
+        // Length of the ray (how tall the player is when crouching)
+        float rayLength = playerCrouchStance.StanceCollider.height - 0.1f; // slight offset from current position
+
+        // Cast a ray upwards to check for space to crouch
+        bool isBlocked = Physics.Raycast(rayStart, Vector3.up, rayLength, playerMask);
+        return !isBlocked; // Return true if not blocked
+    }
+
 
     #endregion
 
