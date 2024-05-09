@@ -151,45 +151,48 @@ public class KnifeController : MonoBehaviour
     {
         readyToShoot = false;
 
-        // Spread
+        // Calculate spread
         float x = Random.Range(-spread, spread);
         float y = Random.Range(-spread, spread);
-
-        // Calculate Direction with Spread
         Vector3 direction = fpsCam.transform.forward + new Vector3(x, y, 0);
 
-        // RayCast
-        RaycastHit rayHit;
-        if (Physics.Raycast(fpsCam.transform.position, direction, out rayHit, range, whatIsEnemy))
-        {
-            Debug.Log(rayHit.collider.name);
+        Debug.Log($"Stab direction: {direction}"); // Debug the direction
 
-            GameObject bulletHoleInstance = null; // Initialize as null to allow conditional instantiation
+        // Perform Raycast
+        if (Physics.Raycast(fpsCam.transform.position, direction, out RaycastHit rayHit, range, whatIsEnemy))
+        {
+            Debug.Log($"Hit: {rayHit.collider.name}"); // Confirm hit
+
+            GameObject bulletHolePrefab = bulletHoleGraphic; // Default bullet hole
+            float bulletHoleLifetime = 0.75f;
+
+            // Determine action based on the tag of the hit object
             if (rayHit.collider.CompareTag("Enemy"))
             {
                 bool isDead = rayHit.collider.GetComponent<Damageable>().ApplyDamage(damage);
-                if (isDead)
-                {
-                    // Instantiate and keep the last shot bullet hole graphic without destroying it
-                    bulletHoleInstance = Instantiate(bulletHoleLastShotEnemyGraphic, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
-                }
-                else
-                {
-                    // Instantiate and destroy the enemy bullet hole graphic after a delay
-                    bulletHoleInstance = Instantiate(bulletHoleEnemyGraphic, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
-                    Destroy(bulletHoleInstance, 0.75f); // Destroy only the enemy bullet hole graphic after 0.75 seconds
-                }
+                bulletHolePrefab = isDead ? bulletHoleLastShotEnemyGraphic : bulletHoleEnemyGraphic;
+                bulletHoleLifetime = isDead ? Mathf.Infinity : 0.75f;
             }
-            else
+            else if (rayHit.collider.CompareTag("Crate"))
             {
-                // Use the standard bullet hole graphic for non-enemy hits and destroy it after a delay
-                bulletHoleInstance = Instantiate(bulletHoleGraphic, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
-                Destroy(bulletHoleInstance, 0.75f);
+                bool isDestroyed = rayHit.collider.GetComponent<Damageable>().ApplyDamage(damage);
+                if (isDestroyed) bulletHolePrefab = null; // No bullet hole if crate is destroyed
             }
 
-            //Graphics for muzzle flash
+            // Instantiate bullet hole if applicable
+            if (bulletHolePrefab != null)
+            {
+                GameObject bulletHoleInstance = Instantiate(bulletHolePrefab, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
+                if (bulletHoleLifetime != Mathf.Infinity)
+                {
+                    Destroy(bulletHoleInstance, bulletHoleLifetime);
+                }
+            }
+
+
+            // Muzzle flash
             GameObject flashInstance = Instantiate(muzzleFlash, attackPoint.position, Quaternion.identity);
-            Destroy(flashInstance, 1f);
+            Destroy(flashInstance, 1f); // Destroy the muzzle flash after 1 second
         }
 
         // Reset the readyToShoot flag after the specified time interval

@@ -11,6 +11,7 @@ TagManager:
   - RifleAmmo
   - ShotgunAmmo
   - PistolAmmo
+  - Crate
   layers:
   - Default
   - TransparentFX

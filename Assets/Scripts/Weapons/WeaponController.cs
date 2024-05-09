@@ -222,6 +222,7 @@ public class WeaponController : MonoBehaviour
 
             bool isEnemyKilled = false;
             GameObject bulletHolePrefab = bulletHoleGraphic; // Default to the environment bullet hole
+            bool destroyBulletHole = false;
 
             if (rayHit.collider.CompareTag("Enemy"))
             {
@@ -239,6 +240,12 @@ public class WeaponController : MonoBehaviour
 
                 // Use the enemy bullet hole graphic if hit an enemy
                 bulletHolePrefab = isEnemyKilled ? bulletHoleLastShotEnemyGraphicBlowUp : bulletHoleEnemyGraphicBlowUp;
+            }
+
+            if (rayHit.collider.CompareTag("Crate"))
+            {
+                destroyBulletHole = rayHit.collider.GetComponent<Damageable>().ApplyDamage(damage);
+                if (destroyBulletHole) bulletHolePrefab = null; // Do not instantiate bullet hole if crate is destroyed
             }
 
             // Instantiate the bullet hole prefab whether the enemy was killed or not
