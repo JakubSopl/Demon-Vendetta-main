@@ -242,28 +242,37 @@ public class WeaponController : MonoBehaviour
                 bulletHolePrefab = isEnemyKilled ? bulletHoleLastShotEnemyGraphicBlowUp : bulletHoleEnemyGraphicBlowUp;
             }
 
+            // Define the bulletHolePrefab before using it in the conditions
+            GameObject bulletHole = null;
+
             if (rayHit.collider.CompareTag("Crate"))
             {
                 destroyBulletHole = rayHit.collider.GetComponent<Damageable>().ApplyDamage(damage);
-                if (destroyBulletHole) bulletHolePrefab = null; // Do not instantiate bullet hole if crate is destroyed
+                if (destroyBulletHole)
+                {
+                    bulletHolePrefab = null; // Do not instantiate bullet hole if crate is destroyed
+                }
             }
 
-            // Instantiate the bullet hole prefab whether the enemy was killed or not
-            GameObject bulletHole = Instantiate(bulletHolePrefab, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
-
-            // Decide the bullet hole's lifetime based on whether it's a killing shot
-            float bulletHoleLifetime;
-            if (bulletHolePrefab == bulletHoleLastShotEnemyGraphicBlowUp)
+            // Instantiate the bullet hole prefab only if it is not null
+            if (bulletHolePrefab != null)
             {
-                bulletHoleLifetime = 0.5f;  // Short lifetime for the special last shot bullet hole
-            }
-            else
-            {
-                bulletHoleLifetime = isEnemyKilled ? 5.0f : 0.75f;  // Adjust these times as needed for other cases
+                bulletHole = Instantiate(bulletHolePrefab, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
+
+                float bulletHoleLifetime;
+                if (bulletHolePrefab == bulletHoleLastShotEnemyGraphicBlowUp)
+                {
+                    bulletHoleLifetime = 0.5f;  // Short lifetime for the special last shot bullet hole
+                }
+                else
+                {
+                    bulletHoleLifetime = isEnemyKilled ? 5.0f : 0.75f;  // Adjust these times as needed for other cases
+                }
+
+                // Schedule the bullet hole's destruction
+                Destroy(bulletHole, bulletHoleLifetime);
             }
 
-            // Schedule the bullet hole's destruction
-            Destroy(bulletHole, bulletHoleLifetime);
         }
 
         // Muzzle flash graphics
