@@ -89,6 +89,8 @@ public class KnifeController : MonoBehaviour
 
     [HideInInspector]
     public bool isShooting;
+
+
     void Start()
     {
         newWeaponRotation = transform.localRotation.eulerAngles;
@@ -304,4 +306,5 @@ public class KnifeController : MonoBehaviour
     }
 
     #endregion
+
 }
