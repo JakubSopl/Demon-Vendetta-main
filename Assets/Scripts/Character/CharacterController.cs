@@ -172,7 +172,7 @@ public class CharacterController : MonoBehaviour
         CalculateAimingIn();
         CrosshairControl();
 
-
+        CheckForDiamond();
     }
 
     #endregion
@@ -634,6 +634,28 @@ public class CharacterController : MonoBehaviour
 
 
     #endregion
+
+    private void CheckForDiamond()
+    {
+        if (Input.GetKeyDown(KeyCode.Tab))
+        {
+            Vector3 rayOrigin = Camera.main.transform.position;
+            Vector3 rayDirection = Camera.main.transform.forward;
+
+            if (Physics.Raycast(rayOrigin, rayDirection, out RaycastHit hitInfo, 3.0f))
+            {
+                if (hitInfo.collider.CompareTag("Diamond"))
+                {
+                    Diamond diamond = hitInfo.collider.GetComponent<Diamond>();
+                    if (diamond != null)
+                    {
+                        DiamondCollection.Instance.CollectDiamond(diamond.diamondType);
+                        Destroy(hitInfo.collider.gameObject); // Remove the diamond from the scene
+                    }
+                }
+            }
+        }
+    }
 
     #region - Gizmos -
 

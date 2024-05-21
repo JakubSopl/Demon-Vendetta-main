@@ -12,6 +12,7 @@ TagManager:
   - ShotgunAmmo
   - PistolAmmo
   - Crate
+  - Diamond
   layers:
   - Default
   - TransparentFX
