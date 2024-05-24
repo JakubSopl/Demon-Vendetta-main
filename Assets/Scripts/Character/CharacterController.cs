@@ -95,6 +95,12 @@ public class CharacterController : MonoBehaviour
 
     public Image crosshairImage;
 
+    public float interactionDistance = 3.0f;
+    public GameObject starWithDiamonds; // The star model with colored diamonds
+    public GameObject starWithoutDiamonds; // The initial star model
+    public Canvas diamondsCanvas; // The canvas displaying collected diamonds
+
+    private bool isCompleted = false;
 
 
     #region - Awake -
@@ -171,8 +177,8 @@ public class CharacterController : MonoBehaviour
         CalculateLeaning();
         CalculateAimingIn();
         CrosshairControl();
-
         CheckForDiamond();
+        CheckForStarInteraction();
     }
 
     #endregion
@@ -235,7 +241,6 @@ public class CharacterController : MonoBehaviour
     }
 
     #endregion
-
 
     #region - GunSwitch -
 
@@ -635,6 +640,8 @@ public class CharacterController : MonoBehaviour
 
     #endregion
 
+    #region - Diamond -
+
     private void CheckForDiamond()
     {
         if (Input.GetKeyDown(KeyCode.Tab))
@@ -656,6 +663,50 @@ public class CharacterController : MonoBehaviour
             }
         }
     }
+
+    #endregion
+
+    #region - LevelEnd -
+
+    private void CheckForStarInteraction()
+    {
+        if (Input.GetKeyDown(KeyCode.Tab))
+        {
+            Vector3 rayOrigin = Camera.main.transform.position;
+            Vector3 rayDirection = Camera.main.transform.forward;
+
+            if (Physics.Raycast(rayOrigin, rayDirection, out RaycastHit hitInfo, interactionDistance))
+            {
+                if (hitInfo.collider.CompareTag("Star") && !isCompleted)
+                {
+                    if (DiamondCollection.Instance.AllDiamondsCollected())
+                    {
+                        CompleteLevel();
+                    }
+                    else
+                    {
+                        ShowFindAllDiamondsMessage();
+                    }
+                }
+            }
+        }
+    }
+
+    private void CompleteLevel()
+    {
+        isCompleted = true;
+        starWithoutDiamonds.SetActive(false);
+        starWithDiamonds.SetActive(true);
+        diamondsCanvas.gameObject.SetActive(false); // Disable the DiamondsCanvas
+    }
+
+    private void ShowFindAllDiamondsMessage()
+    {
+        // Optional: Show a message that all diamonds need to be collected
+        Debug.Log("You need to collect all diamonds first!");
+    }
+
+    #endregion
 
     #region - Gizmos -
 

@@ -18,6 +18,7 @@ public class PlayerHealth : MonoBehaviour
     public Transform cameraTransform; // Assign the camera transform in the inspector
     public Transform feetTransform;
     public GameObject[] uiCanvases; // Assign the UI canvases in the inspector
+    public GameObject playerDiedMenuCanvas;
     public GameObject[] weapons; // Assign the weapon game objects in the inspector
 
     private float voidThreshold = -10f; // Height threshold to trigger the void effect
@@ -138,9 +139,11 @@ public class PlayerHealth : MonoBehaviour
                 canvas.SetActive(false);
             }
 
+
             StartCoroutine(FallAndFade());
         }
     }
+
 
     private IEnumerator FallAndFade()
     {
@@ -170,7 +173,16 @@ public class PlayerHealth : MonoBehaviour
         }
 
         // Ensure the player dies after the fade out
-        gameObject.SetActive(false); // The player dies when the process is complete
+        //gameObject.SetActive(false); // The player dies when the process is complete
+
+        // Enable the Player Died Menu Canvas
+        playerDiedMenuCanvas.SetActive(true);
+
+        // Unlock the cursor
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        //DeactivateAllExceptMainCameraAndMenu();
     }
 
     private IEnumerator FadeScreen()
@@ -189,4 +201,16 @@ public class PlayerHealth : MonoBehaviour
             gameObject.SetActive(false);
         }
     }
+
+    private void DeactivateAllExceptMainCameraAndMenu()
+    {
+        foreach (GameObject obj in FindObjectsOfType<GameObject>())
+        {
+            if (obj != cameraTransform.gameObject && obj != playerDiedMenuCanvas)
+            {
+                obj.SetActive(false);
+            }
+        }
+    }
+
 }
