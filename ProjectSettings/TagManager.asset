@@ -14,6 +14,7 @@ TagManager:
   - Crate
   - Diamond
   - Star
+  - Portal
   layers:
   - Default
   - TransparentFX

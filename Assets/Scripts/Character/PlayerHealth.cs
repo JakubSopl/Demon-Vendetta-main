@@ -202,15 +202,4 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-    private void DeactivateAllExceptMainCameraAndMenu()
-    {
-        foreach (GameObject obj in FindObjectsOfType<GameObject>())
-        {
-            if (obj != cameraTransform.gameObject && obj != playerDiedMenuCanvas)
-            {
-                obj.SetActive(false);
-            }
-        }
-    }
-
 }

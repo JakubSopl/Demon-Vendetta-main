@@ -99,7 +99,15 @@ public class CharacterController : MonoBehaviour
     public GameObject starWithDiamonds; // The star model with colored diamonds
     public GameObject starWithoutDiamonds; // The initial star model
     public Canvas diamondsCanvas; // The canvas displaying collected diamonds
+    public GameObject[] uiCanvases; // Array of UI canvases to disable
 
+    public ParticleSystem portalParticles; // The particle system for the portal
+    public Canvas levelCompletedCanvas; // The canvas showing level completion
+
+    public Transform portalTransform; // The transform of the portal
+    public float portalDetectionRadius = 2.0f; // The radius to detect player in por
+
+    public Image darkenScreenImage; // Image for darkening the screen
     private bool isCompleted = false;
 
 
@@ -179,6 +187,7 @@ public class CharacterController : MonoBehaviour
         CrosshairControl();
         CheckForDiamond();
         CheckForStarInteraction();
+        CheckForPortalInteraction();
     }
 
     #endregion
@@ -698,12 +707,110 @@ public class CharacterController : MonoBehaviour
         starWithoutDiamonds.SetActive(false);
         starWithDiamonds.SetActive(true);
         diamondsCanvas.gameObject.SetActive(false); // Disable the DiamondsCanvas
+        ActivatePortal();
+    }
+
+    private void ActivatePortal()
+    {
+        if (portalParticles != null)
+        {
+            portalParticles.Play(); // Activate the particle system of the portal
+            Debug.Log("Portal particles activated.");
+        }
+        else
+        {
+            Debug.LogError("Portal particles not assigned in the inspector.");
+        }
     }
 
     private void ShowFindAllDiamondsMessage()
     {
         // Optional: Show a message that all diamonds need to be collected
         Debug.Log("You need to collect all diamonds first!");
+    }
+
+    private void CheckForPortalInteraction()
+    {
+        if (isCompleted && portalParticles.isPlaying)
+        {
+            float distanceToPortal = Vector3.Distance(transform.position, portalTransform.position);
+            if (distanceToPortal <= portalDetectionRadius)
+            {
+                if (AllEnemiesKilled())
+                {
+                    StartCoroutine(AnimatePortalEntry());
+                }
+                else
+                {
+                    // Optional: Show a message indicating that all enemies need to be killed
+                    Debug.Log("You need to kill all enemies first!");
+                }
+            }
+        }
+    }
+
+    private bool AllEnemiesKilled()
+    {
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        return enemies.Length == 0;
+    }
+
+    private IEnumerator AnimatePortalEntry()
+    {
+        // Disable all UI canvases
+        foreach (var canvas in uiCanvases)
+        {
+            canvas.SetActive(false);
+        }
+
+        // Spin and shrink animation
+        float spinShrinkDuration = 1f; // Duration of spin and shrink
+        float elapsedTime = 0.0f;
+
+        while (elapsedTime < spinShrinkDuration)
+        {
+            float t = elapsedTime / spinShrinkDuration;
+            Camera.main.transform.Rotate(Vector3.forward, 3 * Time.deltaTime); // Slower rotation
+            Camera.main.transform.localScale = Vector3.Lerp(Vector3.one, Vector3.zero, t); // Slower shrink
+
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+
+        // Start fading to black
+        yield return StartCoroutine(FadeOut());
+
+        // Unlock the cursor
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        // Show level completed canvas after fade-out is complete
+        ShowLevelCompleted();
+    }
+
+    private IEnumerator FadeOut()
+    {
+        float fadeDuration = 1f;
+        float elapsedTime = 0.0f;
+        Color originalColor = darkenScreenImage.color;
+
+        while (elapsedTime < fadeDuration)
+        {
+            float t = elapsedTime / fadeDuration;
+            darkenScreenImage.color = new Color(originalColor.r, originalColor.g, originalColor.b, Mathf.Lerp(0, 1, t));
+
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+    }
+
+
+
+
+    private void ShowLevelCompleted()
+    {
+        levelCompletedCanvas.gameObject.SetActive(true);
+        // Add any additional logic for level completion, such as loading the next level
     }
 
     #endregion
