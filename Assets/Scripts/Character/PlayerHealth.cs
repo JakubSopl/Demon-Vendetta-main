@@ -28,6 +28,11 @@ public class PlayerHealth : MonoBehaviour
     private bool isDying = false;
     private bool fallingIntoVoid = false;
 
+    private bool isOnFire = false; // Flag to check if the player is on fire
+    private float fireDamage = 5.0f; // Amount of damage per second from fire
+    private float fireCheckInterval = 1.0f; // Time interval between fire checks
+    private float fireCheckTimer = 0.0f; // Timer to track fire check intervals
+
     private void Start()
     {
         UpdateHealthUI();
@@ -38,6 +43,8 @@ public class PlayerHealth : MonoBehaviour
         //CheckForDeadlySurface();
         CheckForMedKit();
         CheckForVoidFall();
+
+        CheckForFire();
     }
 
     private void CheckForDeadlySurface()
@@ -73,25 +80,13 @@ public class PlayerHealth : MonoBehaviour
 
     private void CheckForVoidFall()
     {
-        if (transform.position.y < voidThreshold && !isFading)
+        if (transform.position.y < voidThreshold && !isFading && !isDying)
         {
             isFading = true; // Start the fade effect
-        }
-
-        if (isFading)
-        {
-            if (fadeTimer < fadeDuration)
-            {
-                fadeTimer += Time.deltaTime;
-                float alpha = Mathf.Clamp01(fadeTimer / fadeDuration);
-                fadeImage.color = new Color(0, 0, 0, alpha); // Increase the transparency to create a fade effect
-            }
-            else
-            {
-                Die(true); // The player dies when the fade is complete
-            }
+            StartCoroutine(FadeToBlackAndDie());
         }
     }
+
 
     public void TakeDamage(float damageAmount)
     {
@@ -139,20 +134,89 @@ public class PlayerHealth : MonoBehaviour
                 canvas.SetActive(false);
             }
 
+            if (!fallingIntoVoid)
+            {
+                StartCoroutine(FallAndFade());
+            }
+            else
+            {
+                // Enable the Player Died Menu Canvas
+                playerDiedMenuCanvas.SetActive(true);
 
-            StartCoroutine(FallAndFade());
+                // Unlock the cursor
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
         }
     }
 
 
+
+    private void CheckForFire()
+    {
+        fireCheckTimer += Time.deltaTime;
+        if (fireCheckTimer >= fireCheckInterval)
+        {
+            fireCheckTimer = 0.0f;
+
+            Ray ray = new Ray(feetTransform.position, Vector3.down);
+            RaycastHit hit;
+            if (Physics.Raycast(ray, out hit, 1.5f))
+            {
+                if (hit.collider.CompareTag("Fire"))
+                {
+                    if (!isOnFire)
+                    {
+                        isOnFire = true;
+                        StartCoroutine(TakeFireDamage());
+                    }
+                }
+                else
+                {
+                    isOnFire = false;
+                }
+            }
+            else
+            {
+                isOnFire = false;
+            }
+        }
+    }
+
+    private IEnumerator FadeToBlackAndDie()
+    {
+        while (fadeTimer < fadeDuration)
+        {
+            fadeTimer += Time.deltaTime;
+            float alpha = Mathf.Clamp01(fadeTimer / fadeDuration);
+            fadeImage.color = new Color(0, 0, 0, alpha); // Increase the transparency to create a fade effect
+            yield return null;
+        }
+
+        // Ensure the screen stays black
+        fadeImage.color = new Color(0, 0, 0, 1);
+
+        Die(true);
+    }
+
+
+    private IEnumerator TakeFireDamage()
+    {
+        while (isOnFire)
+        {
+            TakeDamage(fireDamage);
+            yield return new WaitForSeconds(1.0f); // Take damage every second
+        }
+    }
     private IEnumerator FallAndFade()
     {
         // Start fading immediately
         fadeTimer = 0.0f; // Reset the fade timer
-        StartCoroutine(FadeScreen());
 
         if (!fallingIntoVoid)
         {
+            StartCoroutine(FadeScreen());
+
             // Fall effect
             float fallDuration = 2.0f;
             float fallTimer = 0.0f;
@@ -172,8 +236,6 @@ public class PlayerHealth : MonoBehaviour
             }
         }
 
-        // Ensure the player dies after the fade out
-        //gameObject.SetActive(false); // The player dies when the process is complete
 
         // Enable the Player Died Menu Canvas
         playerDiedMenuCanvas.SetActive(true);
@@ -195,11 +257,6 @@ public class PlayerHealth : MonoBehaviour
             yield return null;
         }
 
-        if (fallingIntoVoid)
-        {
-            // Disable the player object after fade out
-            gameObject.SetActive(false);
-        }
     }
 
 }

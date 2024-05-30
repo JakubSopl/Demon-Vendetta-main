@@ -15,6 +15,7 @@ TagManager:
   - Diamond
   - Star
   - Portal
+  - Fire
   layers:
   - Default
   - TransparentFX
