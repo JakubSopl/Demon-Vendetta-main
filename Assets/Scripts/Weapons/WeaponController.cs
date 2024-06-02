@@ -167,7 +167,7 @@ public class WeaponController : MonoBehaviour
         MyInput();
 
         // Update UI Text to show current bullets and total reserve
-        text.SetText($"{bulletsLeft} / {magazineSize} | Reserve: {bulletsTotal}");
+        text.SetText($"{bulletsLeft} / {magazineSize} Reserve: {bulletsTotal}");
     }
 
 

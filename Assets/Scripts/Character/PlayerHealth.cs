@@ -13,8 +13,9 @@ public class PlayerHealth : MonoBehaviour
     public TextMeshProUGUI healthText;
     public LayerMask deadlyLayerMask;
 
-
     public Image fadeImage; // Assign this in the inspector
+    public Image healthPickupImage; // Assign the green flash image in the inspector
+    public Image damageImage; // Assign the red damage image in the inspector
     public Transform cameraTransform; // Assign the camera transform in the inspector
     public Transform feetTransform;
     public GameObject[] uiCanvases; // Assign the UI canvases in the inspector
@@ -33,6 +34,9 @@ public class PlayerHealth : MonoBehaviour
     private float fireCheckInterval = 1.0f; // Time interval between fire checks
     private float fireCheckTimer = 0.0f; // Timer to track fire check intervals
 
+    private float damageEffectCooldown = 1.0f; // Cooldown time for the damage effect
+    private float lastDamageTime = -1.0f; // Time when the last damage effect was triggered
+
     private void Start()
     {
         UpdateHealthUI();
@@ -40,10 +44,8 @@ public class PlayerHealth : MonoBehaviour
 
     private void Update()
     {
-        //CheckForDeadlySurface();
         CheckForMedKit();
         CheckForVoidFall();
-
         CheckForFire();
     }
 
@@ -69,13 +71,10 @@ public class PlayerHealth : MonoBehaviour
                 {
                     RestoreHealth(20); // Restore 20 health, or any other value
                     Destroy(hitInfo.collider.gameObject); // Remove the medkit from the scene
-
-                    // Optional: Add feedback for the player (e.g., sound effect, UI update)
+                    StartCoroutine(HealthPickupEffect()); // Start the green flash effect
                 }
             }
-
         }
-
     }
 
     private void CheckForVoidFall()
@@ -87,7 +86,6 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-
     public void TakeDamage(float damageAmount)
     {
         health -= damageAmount;
@@ -96,6 +94,16 @@ public class PlayerHealth : MonoBehaviour
         if (health <= 0f)
         {
             Die(false);
+        }
+
+        // Trigger damage effect if cooldown has passed
+        //Time.time starts from 0 when the game begins.
+        //On the first damage, Time.time - lastDamageTime will be 0 - (-1) = 1.
+        //Since 1 >= 1, the condition is true, allowing the effect to trigger.
+        if (Time.time - lastDamageTime >= damageEffectCooldown)
+        {
+            lastDamageTime = Time.time;
+            StartCoroutine(DamageEffect());
         }
     }
 
@@ -110,7 +118,7 @@ public class PlayerHealth : MonoBehaviour
     {
         if (healthText != null)
         {
-            healthText.text = "Health: " + health.ToString();
+            healthText.text = " : " + health.ToString();
         }
     }
 
@@ -149,8 +157,6 @@ public class PlayerHealth : MonoBehaviour
             }
         }
     }
-
-
 
     private void CheckForFire()
     {
@@ -199,7 +205,6 @@ public class PlayerHealth : MonoBehaviour
         Die(true);
     }
 
-
     private IEnumerator TakeFireDamage()
     {
         while (isOnFire)
@@ -208,6 +213,7 @@ public class PlayerHealth : MonoBehaviour
             yield return new WaitForSeconds(1.0f); // Take damage every second
         }
     }
+
     private IEnumerator FallAndFade()
     {
         // Start fading immediately
@@ -236,15 +242,12 @@ public class PlayerHealth : MonoBehaviour
             }
         }
 
-
         // Enable the Player Died Menu Canvas
         playerDiedMenuCanvas.SetActive(true);
 
         // Unlock the cursor
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-
-        //DeactivateAllExceptMainCameraAndMenu();
     }
 
     private IEnumerator FadeScreen()
@@ -256,7 +259,76 @@ public class PlayerHealth : MonoBehaviour
             fadeImage.color = new Color(0, 0, 0, alpha); // Increase the transparency to create a fade effect
             yield return null;
         }
-
     }
 
+    private IEnumerator HealthPickupEffect()
+    {
+        float effectDuration = 0.5f; // Duration of the health pickup effect
+        float effectTimer = 0.0f;
+        float maxAlpha = 0.25f; // Maximum alpha value for the effect (less aggressive)
+
+        // Ensure the health pickup image is enabled and fully transparent
+        healthPickupImage.gameObject.SetActive(true);
+        healthPickupImage.color = new Color(0, 1, 0, 0); // Green color with 0 alpha
+
+        // Fade in
+        while (effectTimer < effectDuration / 2)
+        {
+            effectTimer += Time.deltaTime;
+            float alpha = Mathf.Clamp01(effectTimer / (effectDuration / 2)) * maxAlpha;
+            healthPickupImage.color = new Color(0, 1, 0, alpha);
+            yield return null;
+        }
+
+        // Reset timer for fade out
+        effectTimer = 0.0f;
+
+        // Fade out
+        while (effectTimer < effectDuration / 2)
+        {
+            effectTimer += Time.deltaTime;
+            float alpha = maxAlpha * Mathf.Clamp01(1 - (effectTimer / (effectDuration / 2)));
+            healthPickupImage.color = new Color(0, 1, 0, alpha);
+            yield return null;
+        }
+
+        // Ensure the image is fully transparent and deactivate it
+        healthPickupImage.color = new Color(0, 1, 0, 0);
+        healthPickupImage.gameObject.SetActive(false);
+    }
+
+    private IEnumerator DamageEffect()
+    {
+        float effectDuration = 0.5f; // Duration of the damage effect
+        float effectTimer = 0.0f;
+        float maxAlpha = 0.25f; // Maximum alpha value for the effect (less aggressive)
+
+        // Ensure the damage image is enabled and fully transparent
+        damageImage.gameObject.SetActive(true);
+
+        // Fade in
+        while (effectTimer < effectDuration / 2)
+        {
+            effectTimer += Time.deltaTime;
+            float alpha = Mathf.Clamp01(effectTimer / (effectDuration / 2)) * maxAlpha;
+            damageImage.color = new Color(1, 0, 0, alpha);
+            yield return null;
+        }
+
+        // Reset timer for fade out
+        effectTimer = 0.0f;
+
+        // Fade out
+        while (effectTimer < effectDuration / 2)
+        {
+            effectTimer += Time.deltaTime;
+            float alpha = maxAlpha * Mathf.Clamp01(1 - (effectTimer / (effectDuration / 2)));
+            damageImage.color = new Color(1, 0, 0, alpha);
+            yield return null;
+        }
+
+        // Ensure the image is fully transparent and deactivate it
+        damageImage.color = new Color(1, 0, 0, 0);
+        damageImage.gameObject.SetActive(false);
+    }
 }
