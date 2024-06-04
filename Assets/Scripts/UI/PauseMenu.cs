@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -44,6 +45,7 @@ public class PauseMenu : MonoBehaviour
         Time.timeScale = 1f; // Ensure time is running
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
+
 
     public void ReturnToMenu()
     {

@@ -111,6 +111,15 @@ public class CharacterController : MonoBehaviour
     private bool isCompleted = false;
 
 
+    [Header("Audio Clips")]
+    public AudioClip switchGunSound;
+    public AudioClip jumpSound;
+    public AudioClip pickupDiamondSound;
+    public AudioClip interactStarSound;
+    public AudioClip enterPortalSound;
+
+    private AudioSource audioSource;
+
     #region - Awake -
 
     private void Awake()
@@ -167,6 +176,12 @@ public class CharacterController : MonoBehaviour
         float adjustedValue = PlayerPrefs.GetFloat("crosshaircolor", 0);
         Color crosshairColor = Color.HSVToRGB(1f, 1f, 1 - adjustedValue);
         crosshairImage.color = crosshairColor; // Apply the new color
+
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
     }
 
     #endregion
@@ -226,15 +241,14 @@ public class CharacterController : MonoBehaviour
         if (currentWeapon && !isSprinting)
         {
             currentWeapon.isShooting = true;
-            
         }
 
         if (currentWeaponKnife && !isSprinting)
         {
             currentWeaponKnife.isShooting = true;
-
         }
     }
+
 
     private void ShootingReleased()
     {
@@ -265,6 +279,8 @@ public class CharacterController : MonoBehaviour
         currentWeapon = Slot1.GetComponent<WeaponController>();
         if (currentWeapon != null)
             currentWeapon.Initialise(this);
+
+        PlaySound(switchGunSound);
     }
 
     void Equip2()
@@ -279,6 +295,8 @@ public class CharacterController : MonoBehaviour
         currentWeapon = Slot2.GetComponent<WeaponController>();
         if (currentWeapon != null)
             currentWeapon.Initialise(this);
+
+        PlaySound(switchGunSound);
     }
 
     void Equip3()
@@ -293,9 +311,11 @@ public class CharacterController : MonoBehaviour
         currentWeapon = Slot3.GetComponent<WeaponController>();
         if (currentWeapon != null)
             currentWeapon.Initialise(this);
+
+        PlaySound(switchGunSound);
     }
 
-    
+
     void Equip4()
     {
         canLean = false;
@@ -309,9 +329,10 @@ public class CharacterController : MonoBehaviour
         if (currentWeaponKnife != null)
             currentWeaponKnife.Initialise(this);
 
+        PlaySound(switchGunSound);
     }
 
-    
+
 
     #endregion
 
@@ -347,7 +368,7 @@ public class CharacterController : MonoBehaviour
     #region - IsFalling / IsGrounded -
 
     private void SetIsGrounded()
-    {
+    {// Check if the player is grounded directly below
         isGrounded = Physics.CheckSphere(feetTransform.position, playerSettings.isGroundedRadius, groundMask);
 
         if (!isGrounded)
@@ -362,6 +383,7 @@ public class CharacterController : MonoBehaviour
             }
         }
     }
+
 
 
     private void SetIsFalling()
@@ -474,27 +496,27 @@ public class CharacterController : MonoBehaviour
     private void CalculateLeaning()
     {
 
-            if (isLeaningLeft && canLean)
-            {
-                targetLean = leanAngle;
-            }
-            else if (isLeaningRight && canLean)
-            {
-                targetLean = -leanAngle;
-            }
-            else
-            {
-                targetLean = 0;
-            }
+        if (isLeaningLeft && canLean)
+        {
+            targetLean = leanAngle;
+        }
+        else if (isLeaningRight && canLean)
+        {
+            targetLean = -leanAngle;
+        }
+        else
+        {
+            targetLean = 0;
+        }
 
-            if (playerStance == PlayerStance.Crouch || playerStance == PlayerStance.Prone)
-            {
-                targetLean = 0;
-            }
+        if (playerStance == PlayerStance.Crouch || playerStance == PlayerStance.Prone)
+        {
+            targetLean = 0;
+        }
 
-            currentLean = Mathf.SmoothDamp(currentLean, targetLean, ref leanVelocity, leanSmoothing);
+        currentLean = Mathf.SmoothDamp(currentLean, targetLean, ref leanVelocity, leanSmoothing);
 
-            LeanPivot.localRotation =  Quaternion.Euler(new Vector3(0, 0, currentLean));
+        LeanPivot.localRotation = Quaternion.Euler(new Vector3(0, 0, currentLean));
     }
 
     #endregion
@@ -545,7 +567,7 @@ public class CharacterController : MonoBehaviour
 
         var currentStance = playerStandStance;
 
-        if(playerStance == PlayerStance.Crouch)
+        if (playerStance == PlayerStance.Crouch)
         {
             currentStance = playerCrouchStance;
 
@@ -667,11 +689,15 @@ public class CharacterController : MonoBehaviour
                     {
                         DiamondCollection.Instance.CollectDiamond(diamond.diamondType);
                         Destroy(hitInfo.collider.gameObject); // Remove the diamond from the scene
+
+                        // Play pickup diamond sound
+                        PlaySound(pickupDiamondSound);
                     }
                 }
             }
         }
     }
+
 
     #endregion
 
@@ -708,6 +734,8 @@ public class CharacterController : MonoBehaviour
         starWithDiamonds.SetActive(true);
         diamondsCanvas.gameObject.SetActive(false); // Disable the DiamondsCanvas
         ActivatePortal();
+
+        PlaySound(interactStarSound);
     }
 
     private void ActivatePortal()
@@ -763,14 +791,19 @@ public class CharacterController : MonoBehaviour
             canvas.SetActive(false);
         }
 
+        // Disable guns
+        DisableGuns();
+
+        PlaySound(enterPortalSound);
+
         // Spin and shrink animation
-        float spinShrinkDuration = 1f; // Duration of spin and shrink
+        float spinShrinkDuration = 3f; // Increase the duration of spin and shrink to 3 seconds
         float elapsedTime = 0.0f;
 
         while (elapsedTime < spinShrinkDuration)
         {
             float t = elapsedTime / spinShrinkDuration;
-            Camera.main.transform.Rotate(Vector3.forward, 3 * Time.deltaTime); // Slower rotation
+            Camera.main.transform.Rotate(Vector3.forward, 1 * Time.deltaTime); // Slower rotation
             Camera.main.transform.localScale = Vector3.Lerp(Vector3.one, Vector3.zero, t); // Slower shrink
 
             elapsedTime += Time.deltaTime;
@@ -790,7 +823,7 @@ public class CharacterController : MonoBehaviour
 
     private IEnumerator FadeOut()
     {
-        float fadeDuration = 1f;
+        float fadeDuration = 3f; // Increase the duration of fade out to 3 seconds
         float elapsedTime = 0.0f;
         Color originalColor = darkenScreenImage.color;
 
@@ -804,7 +837,18 @@ public class CharacterController : MonoBehaviour
         }
     }
 
-
+    // Method to disable guns
+    private void DisableGuns()
+    {
+        if (currentWeapon != null)
+        {
+            currentWeapon.gameObject.SetActive(false);
+        }
+        if (currentWeaponKnife != null)
+        {
+            currentWeaponKnife.gameObject.SetActive(false);
+        }
+    }
 
 
     private void ShowLevelCompleted()
@@ -823,4 +867,12 @@ public class CharacterController : MonoBehaviour
     }
 
     #endregion
+
+    private void PlaySound(AudioClip clip)
+    {
+        if (clip != null)
+        {
+            audioSource.PlayOneShot(clip);
+        }
+    }
 }
