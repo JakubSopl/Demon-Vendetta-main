@@ -22,6 +22,14 @@ public class PlayerHealth : MonoBehaviour
     public GameObject playerDiedMenuCanvas;
     public GameObject[] weapons; // Assign the weapon game objects in the inspector
 
+    public AudioClip healthPickupSound; // Sound when picking up Medkit
+    public AudioClip voidFallSound; // Sound when player starts falling into void
+    public AudioClip fireDamageSound; // Sound when player gets fire damage
+    public AudioClip[] enemyDamageSounds; // Array of audio clips for enemy damage
+    public AudioClip playerDieSound; // Sound when player dies
+
+    private AudioSource audioSource;
+
     private float voidThreshold = -10f; // Height threshold to trigger the void effect
     private bool isFading = false;
     private float fadeDuration = 2.0f;
@@ -39,6 +47,11 @@ public class PlayerHealth : MonoBehaviour
 
     private void Start()
     {
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
         UpdateHealthUI();
     }
 
@@ -72,6 +85,8 @@ public class PlayerHealth : MonoBehaviour
                     RestoreHealth(20); // Restore 20 health, or any other value
                     Destroy(hitInfo.collider.gameObject); // Remove the medkit from the scene
                     StartCoroutine(HealthPickupEffect()); // Start the green flash effect
+
+                    PlaySound(healthPickupSound); // Play health pickup sound
                 }
             }
         }
@@ -83,11 +98,15 @@ public class PlayerHealth : MonoBehaviour
         {
             isFading = true; // Start the fade effect
             StartCoroutine(FadeToBlackAndDie());
+
+            PlaySound(voidFallSound); // Play void fall sound
         }
     }
 
     public void TakeDamage(float damageAmount)
     {
+        if (isDying) return; // Prevent damage effects after player has died
+
         health -= damageAmount;
         health = Mathf.Clamp(health, 0, maxHealth);
         UpdateHealthUI();
@@ -97,13 +116,28 @@ public class PlayerHealth : MonoBehaviour
         }
 
         // Trigger damage effect if cooldown has passed
-        //Time.time starts from 0 when the game begins.
-        //On the first damage, Time.time - lastDamageTime will be 0 - (-1) = 1.
-        //Since 1 >= 1, the condition is true, allowing the effect to trigger.
         if (Time.time - lastDamageTime >= damageEffectCooldown)
         {
             lastDamageTime = Time.time;
             StartCoroutine(DamageEffect());
+
+            if (isOnFire)
+            {
+                PlaySound(fireDamageSound); // Play fire damage sound
+            }
+            else
+            {
+                PlayRandomEnemyDamageSound(); // Play random enemy damage sound
+            }
+        }
+    }
+
+    private void PlayRandomEnemyDamageSound()
+    {
+        if (enemyDamageSounds.Length > 0)
+        {
+            int randomIndex = Random.Range(0, enemyDamageSounds.Length);
+            PlaySound(enemyDamageSounds[randomIndex]);
         }
     }
 
@@ -142,9 +176,12 @@ public class PlayerHealth : MonoBehaviour
                 canvas.SetActive(false);
             }
 
+            // Disable character controller to stop movement
+            GetComponent<CharacterController>().enabled = false;
+
             if (!fallingIntoVoid)
             {
-                StartCoroutine(FallAndFade());
+                StartCoroutine(PlayDeathSoundAndFall());
             }
             else
             {
@@ -157,6 +194,25 @@ public class PlayerHealth : MonoBehaviour
             }
         }
     }
+
+
+    private IEnumerator PlayDeathSoundAndFall()
+    {
+        PlaySound(playerDieSound); // Play player die sound
+        StartCoroutine(FallAndFade()); // Immediately start the fall and fade sequence
+        yield return new WaitForSeconds(playerDieSound.length); // Wait for the sound to finish
+
+
+
+        // Enable the Player Died Menu Canvas
+        playerDiedMenuCanvas.SetActive(true);
+
+        // Unlock the cursor
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+
 
     private void CheckForFire()
     {
@@ -330,5 +386,13 @@ public class PlayerHealth : MonoBehaviour
         // Ensure the image is fully transparent and deactivate it
         damageImage.color = new Color(1, 0, 0, 0);
         damageImage.gameObject.SetActive(false);
+    }
+
+    private void PlaySound(AudioClip clip)
+    {
+        if (clip != null)
+        {
+            audioSource.PlayOneShot(clip);
+        }
     }
 }

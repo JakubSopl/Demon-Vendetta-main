@@ -113,12 +113,16 @@ public class CharacterController : MonoBehaviour
 
     [Header("Audio Clips")]
     public AudioClip switchGunSound;
-    public AudioClip jumpSound;
+    public AudioClip[] jumpSounds; // Array of audio clips for jumping
     public AudioClip pickupDiamondSound;
     public AudioClip interactStarSound;
     public AudioClip enterPortalSound;
+    public AudioClip walkSound; // New sound clip for walking
+    public AudioClip runSound;  // New sound clip for running
 
     private AudioSource audioSource;
+    private AudioSource oneShotAudioSource;
+    private bool isPlayingMovementSound; // Flag to track if movement sound is playing
 
     #region - Awake -
 
@@ -182,6 +186,8 @@ public class CharacterController : MonoBehaviour
         {
             audioSource = gameObject.AddComponent<AudioSource>();
         }
+
+        oneShotAudioSource = gameObject.AddComponent<AudioSource>();
     }
 
     #endregion
@@ -203,6 +209,12 @@ public class CharacterController : MonoBehaviour
         CheckForDiamond();
         CheckForStarInteraction();
         CheckForPortalInteraction();
+
+        // Re-evaluate movement sound after playing the jump sound
+        if (!audioSource.isPlaying && isGrounded && input_Movement.magnitude > 0)
+        {
+            PlayMovementSound();
+        }
     }
 
     #endregion
@@ -269,69 +281,79 @@ public class CharacterController : MonoBehaviour
 
     void Equip1()
     {
-        canLean = true;
-        Slot1.SetActive(true);
-        Slot2.SetActive(false);
-        Slot3.SetActive(false);
-        Slot4.SetActive(false);
+        if (currentWeapon != Slot1.GetComponent<WeaponController>())
+        {
+            canLean = true;
+            Slot1.SetActive(true);
+            Slot2.SetActive(false);
+            Slot3.SetActive(false);
+            Slot4.SetActive(false);
 
-        // Update current weapon
-        currentWeapon = Slot1.GetComponent<WeaponController>();
-        if (currentWeapon != null)
-            currentWeapon.Initialise(this);
+            // Update current weapon
+            currentWeapon = Slot1.GetComponent<WeaponController>();
+            if (currentWeapon != null)
+                currentWeapon.Initialise(this);
 
-        PlaySound(switchGunSound);
+            PlaySound(switchGunSound);
+        }
     }
 
     void Equip2()
     {
-        canLean = true;
-        Slot1.SetActive(false);
-        Slot2.SetActive(true);
-        Slot3.SetActive(false);
-        Slot4.SetActive(false);
+        if (currentWeapon != Slot2.GetComponent<WeaponController>())
+        {
+            canLean = true;
+            Slot1.SetActive(false);
+            Slot2.SetActive(true);
+            Slot3.SetActive(false);
+            Slot4.SetActive(false);
 
-        // Update current weapon
-        currentWeapon = Slot2.GetComponent<WeaponController>();
-        if (currentWeapon != null)
-            currentWeapon.Initialise(this);
+            // Update current weapon
+            currentWeapon = Slot2.GetComponent<WeaponController>();
+            if (currentWeapon != null)
+                currentWeapon.Initialise(this);
 
-        PlaySound(switchGunSound);
+            PlaySound(switchGunSound);
+        }
     }
 
     void Equip3()
     {
-        canLean = true;
-        Slot1.SetActive(false);
-        Slot2.SetActive(false);
-        Slot3.SetActive(true);
-        Slot4.SetActive(false);
+        if (currentWeapon != Slot3.GetComponent<WeaponController>())
+        {
+            canLean = true;
+            Slot1.SetActive(false);
+            Slot2.SetActive(false);
+            Slot3.SetActive(true);
+            Slot4.SetActive(false);
 
-        // Update current weapon
-        currentWeapon = Slot3.GetComponent<WeaponController>();
-        if (currentWeapon != null)
-            currentWeapon.Initialise(this);
+            // Update current weapon
+            currentWeapon = Slot3.GetComponent<WeaponController>();
+            if (currentWeapon != null)
+                currentWeapon.Initialise(this);
 
-        PlaySound(switchGunSound);
+            PlaySound(switchGunSound);
+        }
     }
-
 
     void Equip4()
     {
-        canLean = false;
-        Slot1.SetActive(false);
-        Slot2.SetActive(false);
-        Slot3.SetActive(false);
-        Slot4.SetActive(true);
+        if (currentWeaponKnife != Slot4.GetComponent<KnifeController>())
+        {
+            canLean = false;
+            Slot1.SetActive(false);
+            Slot2.SetActive(false);
+            Slot3.SetActive(false);
+            Slot4.SetActive(true);
 
-        // Update current weapon
-        currentWeaponKnife = Slot4.GetComponent<KnifeController>();
-        if (currentWeaponKnife != null)
-            currentWeaponKnife.Initialise(this);
+            // Update current weapon
+            currentWeaponKnife = Slot4.GetComponent<KnifeController>();
+            if (currentWeaponKnife != null)
+                currentWeaponKnife.Initialise(this);
 
-        PlaySound(switchGunSound);
+            PlaySound(switchGunSound);
+        }
     }
-
 
 
     #endregion
@@ -483,8 +505,9 @@ public class CharacterController : MonoBehaviour
         targetMovement += jumpingForce * Time.deltaTime;
 
         characterController.Move(targetMovement);
-    }
 
+        PlayMovementSound(); // Play walking or running sound
+    }
 
 
     #endregion
@@ -551,10 +574,11 @@ public class CharacterController : MonoBehaviour
             jumpingForce = Vector3.up * playerSettings.JumpingHeight;
             playerGravity = 0;
             currentWeapon.TriggerJump();
+
+            // Play the jump sound
+            PlayJumpSound();
         }
     }
-
-
 
 
     #endregion
@@ -690,8 +714,8 @@ public class CharacterController : MonoBehaviour
                         DiamondCollection.Instance.CollectDiamond(diamond.diamondType);
                         Destroy(hitInfo.collider.gameObject); // Remove the diamond from the scene
 
-                        // Play pickup diamond sound
-                        PlaySound(pickupDiamondSound);
+                        // Play pickup diamond sound using one-shot audio source
+                        oneShotAudioSource.PlayOneShot(pickupDiamondSound);
                     }
                 }
             }
@@ -735,7 +759,8 @@ public class CharacterController : MonoBehaviour
         diamondsCanvas.gameObject.SetActive(false); // Disable the DiamondsCanvas
         ActivatePortal();
 
-        PlaySound(interactStarSound);
+        // Play interact star sound using one-shot audio source
+        oneShotAudioSource.PlayOneShot(interactStarSound);
     }
 
     private void ActivatePortal()
@@ -868,6 +893,8 @@ public class CharacterController : MonoBehaviour
 
     #endregion
 
+    #region - Sounds -
+
     private void PlaySound(AudioClip clip)
     {
         if (clip != null)
@@ -875,4 +902,41 @@ public class CharacterController : MonoBehaviour
             audioSource.PlayOneShot(clip);
         }
     }
+
+    private void PlayJumpSound()
+    {
+        if (jumpSounds.Length > 0)
+        {
+            int randomIndex = Random.Range(0, jumpSounds.Length);
+            audioSource.Stop();
+            audioSource.PlayOneShot(jumpSounds[randomIndex]);
+            isPlayingMovementSound = false; // Ensure that movement sound is re-evaluated
+        }
+    }
+
+    private void PlayMovementSound()
+    {
+        if (isGrounded && input_Movement.magnitude > 0 && !isPlayingMovementSound)
+        {
+            if (isSprinting && runSound != null)
+            {
+                audioSource.clip = runSound;
+            }
+            else if (!isSprinting && walkSound != null)
+            {
+                audioSource.clip = walkSound;
+            }
+            audioSource.loop = true;
+            audioSource.Play();
+            isPlayingMovementSound = true;
+        }
+        else if (input_Movement.magnitude == 0 && isPlayingMovementSound)
+        {
+            audioSource.Stop();
+            isPlayingMovementSound = false;
+        }
+    }
+
+    #endregion
+
 }

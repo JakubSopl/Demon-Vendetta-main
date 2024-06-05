@@ -114,6 +114,15 @@ public class WeaponController : MonoBehaviour
     public static List<WeaponController> AllWeapons = new List<WeaponController>();
     public WeaponType weaponType;
 
+    [SerializeField]
+    private AudioClip shootSound; // Shooting sound clip
+    private AudioSource audioSource;
+
+    [SerializeField]
+    private AudioClip ammoPickupSound; // Ammo pickup sound clip
+
+
+
     #region - Start / Update / Awake -
 
     private void Start()
@@ -132,6 +141,12 @@ public class WeaponController : MonoBehaviour
         bulletsTotal = Mathf.Max(bulletsTotal, magazineSize); // Initialize total bullets, ensuring it's at least one full magazine
         readyToShoot = true;
         RegisterWeapon();
+
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
     }
 
     private void RegisterWeapon()
@@ -207,6 +222,12 @@ public class WeaponController : MonoBehaviour
     private void Shoot()
     {
         readyToShoot = false;
+
+        // Play shooting sound
+        if (shootSound != null)
+        {
+            audioSource.PlayOneShot(shootSound);
+        }
 
         // Spread
         float x = Random.Range(-spread, spread);
@@ -289,6 +310,7 @@ public class WeaponController : MonoBehaviour
     }
 
 
+
     private void ResetShot()
     {
         readyToShoot = true;
@@ -350,10 +372,17 @@ public class WeaponController : MonoBehaviour
                 {
                     weaponToRefill.AddAmmo(ammoToAdd);
                     Destroy(hitInfo.collider.gameObject);  // Destroy the ammo box
+
+                    // Play ammo pickup sound
+                    if (ammoPickupSound != null)
+                    {
+                        audioSource.PlayOneShot(ammoPickupSound);
+                    }
                 }
             }
         }
     }
+
 
     // Utility method to find a weapon controller by type
     private WeaponController FindWeaponController(WeaponType type)
