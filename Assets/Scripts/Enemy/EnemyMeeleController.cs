@@ -11,24 +11,28 @@ public class EnemyMeeleController : MonoBehaviour
 
     // Patroling
     [SerializeField] private Vector3 walkPoint;
-    bool walkPointSet;
+    private bool walkPointSet;
     [SerializeField] private float walkPointRange;
 
     // Attacking
     [SerializeField] private float timeBetweenAttacks;
-    bool alreadyAttacked;
-    [SerializeField] private Transform firePoint; // The point from which the projectile will be fired
+    private bool alreadyAttacked;
     [SerializeField] private float attackDamage = 10f; // Damage dealt to the player
-
 
     // States
     [SerializeField] private float sightRange, attackRange;
-    [SerializeField] private bool playerInSightRange, playerInAttackRange;
+    private bool playerInSightRange, playerInAttackRange;
+
+    // Audio
+    [SerializeField] private AudioClip attackSound;
+    [SerializeField] private AudioClip deathSound;
+    private AudioSource audioSource;
 
     private void Awake()
     {
         player = GameObject.Find("Player").transform;
         agent = GetComponent<NavMeshAgent>();
+        audioSource = GetComponent<AudioSource>();
     }
 
     private void Update()
@@ -105,6 +109,12 @@ public class EnemyMeeleController : MonoBehaviour
                     if (playerHealth != null)
                     {
                         playerHealth.TakeDamage(attackDamage);
+
+                        // Play attack sound
+                        if (attackSound != null && audioSource != null)
+                        {
+                            audioSource.PlayOneShot(attackSound);
+                        }
                     }
 
                     alreadyAttacked = true;
@@ -114,11 +124,18 @@ public class EnemyMeeleController : MonoBehaviour
         }
     }
 
-
-
     private void ResetAttack()
     {
         alreadyAttacked = false;
+    }
+
+    private void OnDestroy()
+    {
+        // Play death sound
+        if (deathSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(deathSound);
+        }
     }
 
     private void OnDrawGizmosSelected()

@@ -13,6 +13,9 @@ public class EnemyBlowUpController : MonoBehaviour
     [SerializeField] private float explosionRange = 5f; // The radius of the explosion
     [SerializeField] private float explosionDamage = 50f; // The damage dealt by the explosion
     [SerializeField] private GameObject explosionEffectPrefab; // Assign an explosion effect prefab here
+    [SerializeField] private AudioClip explosionSound; // The explosion sound effect
+
+    private AudioSource audioSource;
 
     // States
     [SerializeField] private float sightRange;
@@ -22,6 +25,7 @@ public class EnemyBlowUpController : MonoBehaviour
     {
         player = GameObject.Find("Player").transform;
         agent = GetComponent<NavMeshAgent>();
+        audioSource = GetComponent<AudioSource>();
     }
 
     private void Update()
@@ -46,13 +50,18 @@ public class EnemyBlowUpController : MonoBehaviour
 
     private void Explode()
     {
+        // Play the explosion sound
+        if (explosionSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(explosionSound);
+        }
+
         // Instantiate an explosion effect at this location
         if (explosionEffectPrefab != null)
         {
             GameObject explosionEffect = Instantiate(explosionEffectPrefab, transform.position, Quaternion.identity);
 
             // Automatically destroy the explosion effect after its duration
-            // Assumes the Particle System is the main component of the prefab
             ParticleSystem ps = explosionEffect.GetComponent<ParticleSystem>();
             if (ps != null)
             {

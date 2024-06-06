@@ -30,10 +30,16 @@ public class EnemyController : MonoBehaviour
     [SerializeField] private float sightRange, attackRange;
     private bool flamethrowerActive = false;
 
+    // Audio
+    [SerializeField] private AudioClip attackSound;
+    [SerializeField] private AudioClip deathSound;
+    private AudioSource audioSource;
+
     private void Awake()
     {
         player = GameObject.Find("Player").transform;
         agent = GetComponent<NavMeshAgent>();
+        audioSource = GetComponent<AudioSource>();
 
         // Initially disable flamethrower effects
         ignitionFlame.SetActive(false);
@@ -121,6 +127,12 @@ public class EnemyController : MonoBehaviour
             {
                 playerHealth.TakeDamage(attackDamage);
             }
+
+            // Play attack sound
+            if (attackSound != null && audioSource != null)
+            {
+                audioSource.PlayOneShot(attackSound);
+            }
         }
     }
 
@@ -136,6 +148,15 @@ public class EnemyController : MonoBehaviour
         ignitionFlame.SetActive(true);
         flame.SetActive(true);
         lightEffect.SetActive(true);
+    }
+
+    private void OnDestroy()
+    {
+        // Play death sound
+        if (deathSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(deathSound);
+        }
     }
 
     private void OnDrawGizmosSelected()
