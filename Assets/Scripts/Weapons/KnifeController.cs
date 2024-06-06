@@ -90,6 +90,9 @@ public class KnifeController : MonoBehaviour
     [HideInInspector]
     public bool isShooting;
 
+    [SerializeField]
+    private AudioClip stabSound; // Shooting sound clip
+    private AudioSource audioSource;
 
     void Start()
     {
@@ -119,6 +122,12 @@ public class KnifeController : MonoBehaviour
     private void Awake()
     {
         readyToShoot = true;
+
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
     }
 
     #region - Shooting -
@@ -152,6 +161,12 @@ public class KnifeController : MonoBehaviour
     private void Shoot()
     {
         readyToShoot = false;
+
+        // Play shooting sound
+        if (stabSound != null)
+        {
+            audioSource.PlayOneShot(stabSound);
+        }
 
         // Calculate spread
         float x = Random.Range(-spread, spread);
