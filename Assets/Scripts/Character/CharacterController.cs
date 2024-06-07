@@ -789,23 +789,9 @@ public class CharacterController : MonoBehaviour
             float distanceToPortal = Vector3.Distance(transform.position, portalTransform.position);
             if (distanceToPortal <= portalDetectionRadius)
             {
-                if (AllEnemiesKilled())
-                {
                     StartCoroutine(AnimatePortalEntry());
-                }
-                else
-                {
-                    // Optional: Show a message indicating that all enemies need to be killed
-                    Debug.Log("You need to kill all enemies first!");
-                }
             }
         }
-    }
-
-    private bool AllEnemiesKilled()
-    {
-        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
-        return enemies.Length == 0;
     }
 
     private IEnumerator AnimatePortalEntry()

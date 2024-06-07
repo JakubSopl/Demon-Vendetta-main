@@ -17,6 +17,7 @@ TagManager:
   - Portal
   - Fire
   - Checkpoint
+  - NoShoot
   layers:
   - Default
   - TransparentFX

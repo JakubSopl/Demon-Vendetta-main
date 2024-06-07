@@ -122,7 +122,6 @@ public class WeaponController : MonoBehaviour
     private AudioClip ammoPickupSound; // Ammo pickup sound clip
 
 
-
     #region - Start / Update / Awake -
 
     private void Start()
@@ -236,64 +235,89 @@ public class WeaponController : MonoBehaviour
         // Calculate Direction with Spread
         Vector3 direction = fpsCam.transform.forward + new Vector3(x, y, 0);
 
-        // RayCast
-        if (Physics.Raycast(fpsCam.transform.position, direction, out RaycastHit rayHit, range, whatIsEnemy))
+        bool hitValidTarget = false;
+        RaycastHit rayHit;
+
+        // Continue raycasting until a valid target is hit or the maximum range is reached
+        Vector3 rayOrigin = fpsCam.transform.position;
+        float remainingRange = range;
+
+        while (remainingRange > 0 && !hitValidTarget)
         {
-            Debug.Log(rayHit.collider.name);
-
-            bool isEnemyKilled = false;
-            GameObject bulletHolePrefab = bulletHoleGraphic; // Default to the environment bullet hole
-            bool destroyBulletHole = false;
-
-            if (rayHit.collider.CompareTag("Enemy"))
+            if (Physics.Raycast(rayOrigin, direction, out rayHit, remainingRange))
             {
-                // Apply damage and check if it resulted in enemy's death
-                isEnemyKilled = rayHit.collider.GetComponent<Damageable>().ApplyDamage(damage);
-
-                // Use the enemy bullet hole graphic if hit an enemy
-                bulletHolePrefab = isEnemyKilled ? bulletHoleLastShotEnemyGraphic : bulletHoleEnemyGraphic;
-            }
-
-            if (rayHit.collider.CompareTag("EnemyBlowUp"))
-            {
-                // Apply damage and check if it resulted in enemy's death
-                isEnemyKilled = rayHit.collider.GetComponent<Damageable>().ApplyDamage(damage);
-
-                // Use the enemy bullet hole graphic if hit an enemy
-                bulletHolePrefab = isEnemyKilled ? bulletHoleLastShotEnemyGraphicBlowUp : bulletHoleEnemyGraphicBlowUp;
-            }
-
-            // Define the bulletHolePrefab before using it in the conditions
-            GameObject bulletHole = null;
-
-            if (rayHit.collider.CompareTag("Crate"))
-            {
-                destroyBulletHole = rayHit.collider.GetComponent<Damageable>().ApplyDamage(damage);
-                if (destroyBulletHole)
+                // Check if the hit collider has the "NoShoot" tag
+                if (rayHit.collider.CompareTag("NoShoot"))
                 {
-                    bulletHolePrefab = null; // Do not instantiate bullet hole if crate is destroyed
-                }
-            }
-
-            // Instantiate the bullet hole prefab only if it is not null
-            if (bulletHolePrefab != null)
-            {
-                bulletHole = Instantiate(bulletHolePrefab, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
-
-                float bulletHoleLifetime;
-                if (bulletHolePrefab == bulletHoleLastShotEnemyGraphicBlowUp)
-                {
-                    bulletHoleLifetime = 0.5f;  // Short lifetime for the special last shot bullet hole
+                    // Adjust the ray origin to continue raycasting from the hit point
+                    rayOrigin = rayHit.point + direction.normalized * 0.1f; // Move slightly forward to avoid hitting the same point again
+                    remainingRange -= Vector3.Distance(fpsCam.transform.position, rayHit.point); // Reduce the remaining range
                 }
                 else
                 {
-                    bulletHoleLifetime = isEnemyKilled ? 5.0f : 0.75f;  // Adjust these times as needed for other cases
+                    hitValidTarget = true;
+
+                    Debug.Log(rayHit.collider.name);
+
+                    bool isEnemyKilled = false;
+                    GameObject bulletHolePrefab = bulletHoleGraphic; // Default to the environment bullet hole
+                    bool destroyBulletHole = false;
+
+                    if (rayHit.collider.CompareTag("Enemy"))
+                    {
+                        // Apply damage and check if it resulted in enemy's death
+                        isEnemyKilled = rayHit.collider.GetComponent<Damageable>().ApplyDamage(damage);
+
+                        // Use the enemy bullet hole graphic if hit an enemy
+                        bulletHolePrefab = isEnemyKilled ? bulletHoleLastShotEnemyGraphic : bulletHoleEnemyGraphic;
+                    }
+
+                    if (rayHit.collider.CompareTag("EnemyBlowUp"))
+                    {
+                        // Apply damage and check if it resulted in enemy's death
+                        isEnemyKilled = rayHit.collider.GetComponent<Damageable>().ApplyDamage(damage);
+
+                        // Use the enemy bullet hole graphic if hit an enemy
+                        bulletHolePrefab = isEnemyKilled ? bulletHoleLastShotEnemyGraphicBlowUp : bulletHoleEnemyGraphicBlowUp;
+                    }
+
+                    // Define the bulletHolePrefab before using it in the conditions
+                    GameObject bulletHole = null;
+
+                    if (rayHit.collider.CompareTag("Crate"))
+                    {
+                        destroyBulletHole = rayHit.collider.GetComponent<Damageable>().ApplyDamage(damage);
+                        if (destroyBulletHole)
+                        {
+                            bulletHolePrefab = null; // Do not instantiate bullet hole if crate is destroyed
+                        }
+                    }
+
+                    // Instantiate the bullet hole prefab only if it is not null
+                    if (bulletHolePrefab != null)
+                    {
+                        bulletHole = Instantiate(bulletHolePrefab, rayHit.point + rayHit.normal * 0.001f, Quaternion.LookRotation(rayHit.normal));
+
+                        float bulletHoleLifetime;
+                        if (bulletHolePrefab == bulletHoleLastShotEnemyGraphicBlowUp)
+                        {
+                            bulletHoleLifetime = 0.5f;  // Short lifetime for the special last shot bullet hole
+                        }
+                        else
+                        {
+                            bulletHoleLifetime = isEnemyKilled ? 5.0f : 0.75f;  // Adjust these times as needed for other cases
+                        }
+
+                        // Schedule the bullet hole's destruction
+                        Destroy(bulletHole, bulletHoleLifetime);
+                    }
                 }
-
-                // Schedule the bullet hole's destruction
-                Destroy(bulletHole, bulletHoleLifetime);
             }
-
+            else
+            {
+                // Exit the loop if no collider is hit within the remaining range
+                break;
+            }
         }
 
         // Muzzle flash graphics
@@ -308,6 +332,7 @@ public class WeaponController : MonoBehaviour
         if (bulletsShot > 0 && bulletsLeft > 0)
             Invoke(nameof(Shoot), timeBetweenShots); // Continue shooting if there are bullets left and more shots to fire
     }
+
 
 
 
